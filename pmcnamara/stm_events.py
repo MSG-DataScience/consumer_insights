@@ -19,3 +19,15 @@ nyr_gold = pd.read_excel('/Users/mcnamarp/Downloads/STM Events/Golden Knicks Ten
 
 # IMPORT ATTENDANCE DATA #
 xls = pd.ExcelFile('/Users/mcnamarp/Downloads/STM Events/Event Attendance Numbers with Archtics IDs v lookup.xlsx')
+sheets = xls.sheet_names
+event_data = pd.DataFrame()
+for event in sheets:
+	temp = xls.parse(event)
+	temp['Event'] = event
+	event_data = pd.concat([event_data,temp])
+
+
+renewals_query = '''
+SELECT * FROM ads_main.t_ticket_sales_event_seat WHERE tm_plan_event_name IN ('16KFS','17KFS','16RFS','17RFS') LIMIT 500;
+'''
+renwals = pd.read_sql(renewals_query, engine)

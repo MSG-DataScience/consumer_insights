@@ -39,7 +39,10 @@ SELECT tm_acct_id, ticket_product_description AS description, SUM(tickets_total_
 FROM ads_main.t_ticket_sales_event_seat A
 WHERE tm_season_name = '2016-17 New York Knicks' AND tm_acct_id NOT IN ('-1','-2')
 GROUP BY tm_acct_id, ticket_product_description, tm_season_name) A
-JOIN (SELECT tm_acct_id, ticket_product_description, COUNT(*) AS tickets FROM (SELECT DISTINCT tm_acct_id, ticket_product_description, tm_event_name, tm_event_date, tm_section_name, tm_row_name, tm_seat_num FROM ads_main.t_ticket_sales_event_seat) S GROUP BY tm_acct_id, ticket_product_description) B ON A.tm_acct_id = B.tm_acct_id AND A.description = B.ticket_product_description;
+JOIN (SELECT tm_acct_id, ticket_product_description, COUNT(*) AS tickets 
+		FROM (SELECT DISTINCT tm_acct_id, ticket_product_description, tm_event_name, tm_event_date, tm_section_name, tm_row_name, tm_seat_num 
+			FROM ads_main.t_ticket_sales_event_seat) S 
+			GROUP BY tm_acct_id, ticket_product_description) B ON A.tm_acct_id = B.tm_acct_id AND A.description = B.ticket_product_description;
 '''
 tm_revenue = pd.read_sql(revenue_query, engine)
 tm_revenue = tm_revenue[tm_revenue['cost'] != 0]
