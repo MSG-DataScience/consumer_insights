@@ -17,7 +17,7 @@ knicks = pd.merge(knicks, segment_labels_knicks, left_on = 'Segment Knicks', rig
 rangers = pd.merge(rangers, segment_labels_knicks, left_on = 'Segment Rangers', right_index = True).drop('Segment Rangers', axis = 1)
 segments = knicks.append(rangers, ignore_index = True)
 
-# combining survey response data #
+# combining survey response da ta #
 sth = pd.read_excel('/Users/mcnamarp/Downloads/fac17002 (10)/STH/fac17002.xlsx', sheetname = 'A1')[['uuid','source','Sample','vspt','Q1_Gender','Q1_Age']]
 indy = pd.read_excel('/Users/mcnamarp/Downloads/fac17002 (10)/Individual_Game_Purchasers/fac17002.xlsx', sheetname = 'A1')[['uuid','source','Sample','vspt','Q1_Gender','Q1_Age']]
 panel = pd.read_excel('/Users/mcnamarp/Downloads/fac17002 (10)/Panel/fac17002.xlsx', sheetname = 'A1')[['uuid','source','Sample','vspt','Q1_Gender','Q1_Age']]
@@ -34,22 +34,18 @@ sth_data = pd.merge(id_mapping, survey_data, left_on = 'uid', right_on = 'source
 
 engine = sqlalchemy.create_engine("redshift+psycopg2://mcnamarp:Welcome2859!@msgbiadb-prod.cqp6htpq4zp6.us-east-1.rds.amazonaws.com:5432/msgbiadb")
 revenue_query = '''
-SELECT A.tm_acct_id::TEXT, description, cost, tickets FROM (
-SELECT tm_acct_id, ticket_product_description AS description, SUM(tickets_total_revenue) AS cost, tm_season_name
+SELECT A.tm_acct_id::TEXT, description, regexp_replace(tm_season_name, '^.* ', '') AS team, cost, tickets FROM (
+SELECT tm_acct_id, ticket_product_description AS description, SUM(tickets_total_revenue) AS cost, SUM(tickets_sold) AS tickets, tm_season_name
 FROM ads_main.t_ticket_sales_event_seat A
-WHERE tm_season_name = '2016-17 New York Knicks' AND tm_acct_id NOT IN ('-1','-2')
-GROUP BY tm_acct_id, ticket_product_description, tm_season_name) A
-JOIN (SELECT tm_acct_id, ticket_product_description, COUNT(*) AS tickets 
-		FROM (SELECT DISTINCT tm_acct_id, ticket_product_description, tm_event_name, tm_event_date, tm_section_name, tm_row_name, tm_seat_num 
-			FROM ads_main.t_ticket_sales_event_seat) S 
-			GROUP BY tm_acct_id, ticket_product_description) B ON A.tm_acct_id = B.tm_acct_id AND A.description = B.ticket_product_description;
+WHERE tm_season_name IN ('2016-17 New York Knicks','2016-17 New York Rangers') AND tm_acct_id NOT IN ('-1','-2') AND tm_comp_code = '0' AND tm_price_code_desc != 'Madison Club'
+GROUP BY tm_acct_id, ticket_product_description, tm_season_name) A;
 '''
 tm_revenue = pd.read_sql(revenue_query, engine)
-tm_revenue = tm_revenue[tm_revenue['cost'] != 0]
+tm_revenue = tm_revenue[(tm_revenue['cost'] > 0) & (tm_revenue['tickets'] > 0)]
 #labels = tm_revenue.groupby('tm_acct_id').max()[['description','description_level']].reset_index().rename(columns = {'description':'category'}).drop(['description_level'], axis = 1)
 #tm_revenue = pd.merge(tm_revenue, labels, on = ['tm_acct_id'], how = 'left').drop(['description_level'], axis = 1)
 
 data = pd.merge(tm_revenue, sth_data, left_on = 'tm_acct_id', right_on = 'acct_id', how = 'left')
 data['avg_ticket'] = data['cost'] / data['tickets']
 data['segment'].fillna('unknown', inplace = True)
-pd.pivot_table(data, values = 'avg_ticket', index = 'description', columns='segment').round()
+pd.pivot_table(data, values = 'avg_ticket', index = 'description', columns='segment').round().astype(int)
