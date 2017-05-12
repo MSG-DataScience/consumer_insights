@@ -1,6 +1,9 @@
 import pandas as pd
+import numpy as np
 import sqlalchemy
 import redshift_sqlalchemy
+import glob
+import os
 
 # importing segment flags #
 knicks = pd.read_excel('/Users/mcnamarp/Downloads/MSG Segmentation phase_20170418_Knicks.xlsx', sheetname = 'Knicks')[['uuid','Segment Knicks']]
@@ -14,38 +17,61 @@ segment_labels_rangers['segment'] = ['Social Media','Scientist','Root home','Cou
 
 # labeling survey respondents #
 knicks = pd.merge(knicks, segment_labels_knicks, left_on = 'Segment Knicks', right_index = True).drop('Segment Knicks', axis = 1)
-rangers = pd.merge(rangers, segment_labels_knicks, left_on = 'Segment Rangers', right_index = True).drop('Segment Rangers', axis = 1)
+rangers = pd.merge(rangers, segment_labels_rangers, left_on = 'Segment Rangers', right_index = True).drop('Segment Rangers', axis = 1)
 segments = knicks.append(rangers, ignore_index = True)
 
 # combining survey response da ta #
-sth = pd.read_excel('/Users/mcnamarp/Downloads/fac17002 (10)/STH/fac17002.xlsx', sheetname = 'A1')[['uuid','source','Sample','vspt','Q1_Gender','Q1_Age']]
-indy = pd.read_excel('/Users/mcnamarp/Downloads/fac17002 (10)/Individual_Game_Purchasers/fac17002.xlsx', sheetname = 'A1')[['uuid','source','Sample','vspt','Q1_Gender','Q1_Age']]
-panel = pd.read_excel('/Users/mcnamarp/Downloads/fac17002 (10)/Panel/fac17002.xlsx', sheetname = 'A1')[['uuid','source','Sample','vspt','Q1_Gender','Q1_Age']]
+sth = pd.read_excel('/Users/mcnamarp/Downloads/fac17002/STH/fac17002.xlsx', sheetname = 'A1')[['uuid','source','Sample']]
+indy = pd.read_excel('/Users/mcnamarp/Downloads/fac17002/Individual_Game_Purchasers/fac17002.xlsx', sheetname = 'A1')[['uuid','source','Sample']]
+#indy_test = pd.read_excel('/Users/mcnamarp/Downloads/fac17002_Indy_MH.xlsx', sheetname = 'A1')[['source','email']]
+panel = pd.read_excel('/Users/mcnamarp/Downloads/fac17002/Panel/fac17002.xlsx', sheetname = 'A1')[['uuid','source','Sample']]
 survey_data = sth.append(panel, ignore_index = True).append(indy, ignore_index = True)
 survey_data.replace({'Sample':{1:'Panel',2:'STH',3:'Indy'}}, inplace = True)
-survey_data = pd.merge(survey_data, segments, on = 'uuid', how = 'left').drop('uuid',axis = 1)
+survey_data = pd.merge(survey_data, segments, on = 'uuid', how = 'left')
 
+# mapping respondents via Nat's files and combining #
+path = '/Users/mcnamarp/Downloads/FW%3a_Survey_Lists'
+all_files = glob.glob(os.path.join(path, "*.csv"))
+df_from_each_file = (pd.read_csv(f, dtype = {'acct_id':'str'}) for f in all_files)
+concatenated_df = pd.concat(df_from_each_file, ignore_index=True)
+mapping = concatenated_df[['EMAIL','uid']].rename(columns = {'EMAIL':'email'}).dropna()
+mapping['email'] = mapping['email'].str.lower()
+
+engine = sqlalchemy.create_engine("redshift+psycopg2://mcnamarp:Welcome2859!@msgbiadb-prod.cqp6htpq4zp6.us-east-1.rds.amazonaws.com:5432/msgbiadb")
+revenue_query = '''
+SELECT email, description, regexp_replace(tm_season_name, '^.* ', '') AS team, cost::integer, tickets FROM (
+SELECT lower(email_address) AS email, ticket_product_description AS description, SUM(CASE WHEN tm_price_code_desc = 'Madison Club' THEN 500 ELSE tickets_total_revenue END) AS cost, SUM(tickets_sold) AS tickets, tm_season_name
+FROM ads_main.t_ticket_sales_event_seat A
+WHERE tm_season_name IN ('2016-17 New York Knicks','2016-17 New York Rangers') AND tm_comp_code = '0'
+GROUP BY email_address, ticket_product_description, tm_season_name) A;
+'''
+tm_revenue = pd.read_sql(revenue_query, engine)
+tm_revenue = tm_revenue[(tm_revenue['cost'] > 0) & (tm_revenue['tickets'] > 0)]
+
+data = pd.merge(tm_revenue, mapping, on = 'email')
+data = pd.merge(data, survey_data, left_on = 'uid', right_on = 'source').drop(['uid','source'], axis = 1).drop_duplicates()
+data = data.append(tm_revenue.drop(['email'], axis = 1)).drop_duplicates()
+data['avg_ticket'] = np.round(data['cost'] / data['tickets']).astype(int)
+data['segment'].fillna('unknown', inplace = True)
+data[['email','description','team','cost','tickets','segment','avg_ticket']].to_csv('tickets.csv', index = False)
+
+'''
+nat_emails_test = x[x['email'] != x['Email']]['Email']
+nat_emails = str(list(nat_emails_test.replace({'to\'rourke@carrxerox.com':'rourke@carrxerox.com'}).astype(str).values))
+nat_emails = nat_emails.replace('\"','').replace('[','').replace(']','').replace(', to\'r',', \r')
+nat_email_query = '''SELECT * FROM ads_main.t_ticket_sales_event_seat WHERE tm_season_name IN ('2016-17 New York Knicks','2016-17 New York Rangers') AND lower(email_address) IN (''' + nat_emails + ''')'''.strip('\\n')
+nat_emails_mapped = pd.read_sql(nat_email_query, engine)
+
+pd.pivot_table(data[data['team'] == 'Knicks'], values = 'cost', index = 'description', columns='segment').fillna(0).astype(int)
+pd.pivot_table(data[data['team'] == 'Knicks'], values = 'tickets', index = 'description', columns='segment').fillna(0).astype(int)
+pd.pivot_table(data[data['team'] == 'Knicks'], values = 'avg_ticket', index = 'description', columns='segment').fillna(0).astype(int)
+pd.pivot_table(data[data['team'] == 'Rangers'], values = 'cost', index = 'description', columns='segment').fillna(0).astype(int)
+pd.pivot_table(data[data['team'] == 'Rangers'], values = 'tickets', index = 'description', columns='segment').fillna(0).astype(int)
+pd.pivot_table(data[data['team'] == 'Rangers'], values = 'avg_ticket', index = 'description', columns='segment').fillna(0).astype(int)
+
+# mapping respondents via Dave's files #
 id_mapping1 = pd.read_excel('/Users/mcnamarp/Downloads/Survey update 4.xlsx', sheetname = 'Master List')[['uid','acct_id']]
 id_mapping2 = pd.read_excel('/Users/mcnamarp/Downloads/Survey update 4.xlsx', sheetname = 'Master List (2)')[['uid','acct_id']]
 id_mapping = id_mapping1.append(id_mapping2)
 id_mapping['acct_id'] = id_mapping['acct_id'].astype(str)
-
-sth_data = pd.merge(id_mapping, survey_data, left_on = 'uid', right_on = 'source').drop('uid', axis = 1)
-
-engine = sqlalchemy.create_engine("redshift+psycopg2://mcnamarp:Welcome2859!@msgbiadb-prod.cqp6htpq4zp6.us-east-1.rds.amazonaws.com:5432/msgbiadb")
-revenue_query = '''
-SELECT A.tm_acct_id::TEXT, description, regexp_replace(tm_season_name, '^.* ', '') AS team, cost, tickets FROM (
-SELECT tm_acct_id, ticket_product_description AS description, SUM(tickets_total_revenue) AS cost, SUM(tickets_sold) AS tickets, tm_season_name
-FROM ads_main.t_ticket_sales_event_seat A
-WHERE tm_season_name IN ('2016-17 New York Knicks','2016-17 New York Rangers') AND tm_acct_id NOT IN ('-1','-2') AND tm_comp_code = '0' AND tm_price_code_desc != 'Madison Club'
-GROUP BY tm_acct_id, ticket_product_description, tm_season_name) A;
 '''
-tm_revenue = pd.read_sql(revenue_query, engine)
-tm_revenue = tm_revenue[(tm_revenue['cost'] > 0) & (tm_revenue['tickets'] > 0)]
-#labels = tm_revenue.groupby('tm_acct_id').max()[['description','description_level']].reset_index().rename(columns = {'description':'category'}).drop(['description_level'], axis = 1)
-#tm_revenue = pd.merge(tm_revenue, labels, on = ['tm_acct_id'], how = 'left').drop(['description_level'], axis = 1)
-
-data = pd.merge(tm_revenue, sth_data, left_on = 'tm_acct_id', right_on = 'acct_id', how = 'left')
-data['avg_ticket'] = data['cost'] / data['tickets']
-data['segment'].fillna('unknown', inplace = True)
-pd.pivot_table(data, values = 'avg_ticket', index = 'description', columns='segment').round().astype(int)
