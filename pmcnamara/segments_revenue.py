@@ -42,7 +42,7 @@ revenue_query = '''
 SELECT email, description, regexp_replace(tm_season_name, '^.* ', '') AS team, cost::integer, tickets FROM (
 SELECT lower(email_address) AS email, ticket_product_description AS description, SUM(CASE WHEN tm_price_code_desc = 'Madison Club' THEN 500 ELSE tickets_total_revenue END) AS cost, SUM(tickets_sold) AS tickets, tm_season_name
 FROM ads_main.t_ticket_sales_event_seat A
-WHERE tm_season_name IN ('2016-17 New York Knicks','2016-17 New York Rangers') AND tm_comp_code = '0'
+WHERE tm_season_name IN ('2016-17 New York Knicks','2016-17 New York Rangers') AND tm_comp_code = '0' AND email_address IS NOT NULL
 GROUP BY email_address, ticket_product_description, tm_season_name) A;
 '''
 tm_revenue = pd.read_sql(revenue_query, engine)
@@ -54,6 +54,14 @@ data = data.append(tm_revenue.drop(['email'], axis = 1)).drop_duplicates()
 data['avg_ticket'] = np.round(data['cost'] / data['tickets']).astype(int)
 data['segment'].fillna('unknown', inplace = True)
 data[['email','description','team','cost','tickets','segment','avg_ticket']].to_csv('tickets.csv', index = False)
+
+knicks_all = tm_revenue[(tm_revenue['team'] == 'Knicks') & (tm_revenue['cost'] < 10000)]['cost']
+stats.probplot(knicks_all, plot = pylab)
+pylab.show()
+rangers_all = tm_revenue[(tm_revenue['team'] == 'Rangers') & (tm_revenue['cost'] < 10000)]['cost']
+stats.probplot(rangers_all, plot = pylab)
+pylab.show()
+
 
 '''
 nat_emails_test = x[x['email'] != x['Email']]['Email']

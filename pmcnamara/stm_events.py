@@ -15,10 +15,6 @@ nyr_half = pd.read_excel('/Users/mcnamarp/Downloads/STM Events/1617 NYR Half Pla
 nyr_rookie = pd.read_excel('/Users/mcnamarp/Downloads/STM Events/Mail Merge NYR Rookie Accts 0110.xlsx', sheetname = 'temp')[['acct_id','email_addr','tag','acct_type']]
 rangers_events = [nyr_fan_forum, nyr_kids_camp, nyr_11_25_, nyr_viewing, nyr_ob, nyr_vet, nyr_half, nyr_rookie]
 
-rangers_data = pd.DataFrame()
-for event in rangers_events:
-	event['Event'] = '
-
 # IMPORT KNICKS RSVPs #
 nyk_11_25_ = pd.read_excel('/Users/mcnamarp/Downloads/STM Events/KNICKS - 11 to 25 Year Tenure (mail merge) 12.20.16.xlsx', sheetname = 'temp')[['acct_id','email_addr','tag','acct_type']]
 nyk_leg = pd.read_excel('/Users/mcnamarp/Downloads/STM Events/Legends Knicks Tenure Event 3_1_17.xlsx', sheetname = 'Sheet1')[['acct_id','email_addr','tag','acct_type']]
@@ -65,19 +61,6 @@ data.groupby(['tm_acct_id','team','renewed']).max()['RSVP'].reset_index().groupb
 data.groupby(['tm_acct_id','team','renewed']).max()['Attended'].reset_index().groupby(['team','Attended']).mean()['renewed']
 data[data['RSVP'] == 'Yes'].groupby(['tm_acct_id','team','renewed']).max()['Attended'].reset_index().groupby(['team','Attended']).mean()['renewed']
 
-data[data['retention_segment'] == 'At Risk'].groupby(['tm_acct_id','team','renewed']).max()['RSVP'].reset_index().groupby(['team','RSVP']).mean()['renewed']
-data[data['retention_segment'] == 'At Risk'].groupby(['tm_acct_id','team','renewed']).max()['Attended'].reset_index().groupby(['team','Attended']).mean()['renewed']
-data[(data['retention_segment'] == 'Rookie') & (data['RSVP'] == 'Yes')].groupby(['tm_acct_id','team','renewed']).max()['Attended'].reset_index().groupby(['team','Attended']).mean()['renewed']
-
-# COMBINING WITH DEMOGRAPHICS DATA #
-demo_indexes = pd.read_csv('/Users/mcnamarp/Downloads/Customer Infobase_170425.txt', usecols = ['EMAIL','INDIVIDUAL_ID'])
-demo_indexes['EMAIL'] = demo_indexes['EMAIL'].str.lower()
-demo_data = pd.read_csv('/Users/mcnamarp/Downloads/acxiom_customerinfobase_mh.txt').drop(['PERSONIX_LIFESTAGE','PERSONIX_CLUSTER_GROUP','PERSONIX_TIER','DISCRET_INCOME_SCORE','RELIGION','ETHNICITY','INCOME_HIGHRANGES','OCCUPATION'], axis = 1)
-demo_data.dropna(subset = ['DISCRET_INCOME_PERCENTILE','AGE','GENDER','EDUCATION','MARITAL_STATUS','PRESENCE_OF_CHILDREN','NETWORTH','INCOME_LOWRANGES'], inplace = True)
-demo_data = pd.merge(demo_data, demo_indexes, on = ['INDIVIDUAL_ID']).set_index('INDIVIDUAL_ID').rename(columns = {'EMAIL':'email','INCOME_LOWRANGES':'INCOME','PRESENCE_OF_CHILDREN':'CHILDREN'})
-demo_data.replace({'NETWORTH':{'Less than or equal to $0':0,'$1 - $4,999':1,'$5,000 - $9,999':2,'$10,000 - $24,999':4,'$25,000 - $49,999':8,'$50,000 - $99,999':16,'$100,000 - $249,999':32,'$250,000 - $499,999':64,'$500,000 - $999,999':128,'$1,000,000 - $1,999,999':256,'$2,000,000 +':512}}, inplace = True)
-
-data = pd.merge(data, demo_data, on = 'email')
 data = pd.merge(data, renewals.groupby(['tm_acct_id','team']).max()['tenure'].reset_index(), on = ['tm_acct_id','team'])
 
 # SUMMARY STATS ON MATCHES #
@@ -91,7 +74,24 @@ knicks_retention = pd.read_excel('/Users/mcnamarp/Downloads/Knicks 2016 Retentio
 knicks_retention['team'] = 'Knicks'
 retention = rangers_retention.append(knicks_retention, ignore_index = True).rename(columns = {'Segment':'retention_segment'})
 retention['Email'] = retention['Email'].str.lower()
+
+# ANALYZING RETENTION GROUPS #
 data = pd.merge(data, retention.drop(['Email'], axis = 1), left_on = ['tm_acct_id','team'], right_on = ['acct_id','team']).drop(['acct_id'], axis = 1)
+data.groupby(['tm_acct_id','team','renewed','retention_segment']).max()['RSVP'].reset_index().groupby(['team','RSVP','retention_segment']).mean()['renewed']
+data[data['RSVP'] == 'Yes'].groupby(['tm_acct_id','team','renewed','retention_segment']).max()['Attended'].reset_index().groupby(['team','Attended','retention_segment']).mean()['renewed']
+data[data['retention_segment'] == 'At Risk'].groupby(['tm_acct_id','team','renewed']).max()['RSVP'].reset_index().groupby(['team','RSVP']).mean()['renewed']
+data[data['retention_segment'] == 'At Risk'].groupby(['tm_acct_id','team','renewed']).max()['Attended'].reset_index().groupby(['team','Attended']).mean()['renewed']
+data[(data['retention_segment'] == 'Rookie') & (data['RSVP'] == 'Yes')].groupby(['tm_acct_id','team','renewed']).max()['Attended'].reset_index().groupby(['team','Attended']).mean()['renewed']
+
+# COMBINING WITH DEMOGRAPHICS DATA #
+demo_indexes = pd.read_csv('/Users/mcnamarp/Downloads/Customer Infobase_170425.txt', usecols = ['EMAIL','INDIVIDUAL_ID'])
+demo_indexes['EMAIL'] = demo_indexes['EMAIL'].str.lower()
+demo_data = pd.read_csv('/Users/mcnamarp/Downloads/acxiom_customerinfobase_mh.txt').drop(['PERSONIX_LIFESTAGE','PERSONIX_CLUSTER_GROUP','PERSONIX_TIER','DISCRET_INCOME_SCORE','RELIGION','ETHNICITY','INCOME_HIGHRANGES','OCCUPATION'], axis = 1)
+demo_data.dropna(subset = ['DISCRET_INCOME_PERCENTILE','AGE','GENDER','EDUCATION','MARITAL_STATUS','PRESENCE_OF_CHILDREN','NETWORTH','INCOME_LOWRANGES'], inplace = True)
+demo_data = pd.merge(demo_data, demo_indexes, on = ['INDIVIDUAL_ID']).set_index('INDIVIDUAL_ID').rename(columns = {'EMAIL':'email','INCOME_LOWRANGES':'INCOME','PRESENCE_OF_CHILDREN':'CHILDREN'})
+demo_data.replace({'NETWORTH':{'Less than or equal to $0':0,'$1 - $4,999':1,'$5,000 - $9,999':2,'$10,000 - $24,999':4,'$25,000 - $49,999':8,'$50,000 - $99,999':16,'$100,000 - $249,999':32,'$250,000 - $499,999':64,'$500,000 - $999,999':128,'$1,000,000 - $1,999,999':256,'$2,000,000 +':512}}, inplace = True)
+
+data = pd.merge(data, demo_data, on = 'email')
 
 # GETTING DUMMIES #
 education_dummies = pd.get_dummies(data['EDUCATION'])
@@ -108,13 +108,31 @@ retention_dummies = pd.get_dummies(data['retention_segment'], prefix = 'retentio
 dummies = children_dummies.join(marital_dummies).join(gender_dummies).rename(columns = {'YES':'CHILDREN'}).join(team_dummies).join(rsvp_dummies).join(attended_dummies).join(retention_dummies)
 dummies.drop(['NO','MALE','MARRIED'], axis = 1, inplace = True)
 
+
 model_data = data.drop(['EDUCATION','INCOME','GENDER','CHILDREN','MARITAL_STATUS','NETWORTH','tm_acct_id','RSVP','Attended','email','team','retention_segment','Score'], axis = 1).join(dummies).drop(['rsvp_No','attend_No'], axis = 1).drop_duplicates()
-logit = sm.Logit(model_data['renewed'], model_data.drop(['renewed'], axis = 1))
+model_datar = model_data[model_data['Rangers'] == 1].drop(['Knicks','Rangers','retention_Early','retention_Late','DISCRET_INCOME_PERCENTILE','FEMALE','SINGLE','CHILDREN','AGE'], axis = 1)
+model_datak = model_data[model_data['Knicks'] == 1].drop(['Knicks','Rangers','retention_25 or More','retention_25 or Less','DISCRET_INCOME_PERCENTILE','FEMALE','SINGLE','CHILDREN','AGE'], axis = 1)
+logit = sm.Logit(model_datak['renewed'], model_datak.drop(['renewed'], axis = 1))
 result = logit.fit()
 result.summary()
 np.exp(result.params)
 
-# testing tenure interactions #
+# testing tenure #
+tenure = pd.merge(renewals, renewal_rates, on = ['tm_acct_id','email','team'])
+knicks_tenure = tenure[tenure['team'] == 'Knicks'].groupby('tenure').mean().reset_index().drop(['tm_acct_id'], axis = 1)
+sns.regplot(knicks_tenure['tenure'], knicks_tenure['renewed'], knicks_tenure, color = 'orange')
+rangers_tenure = tenure[tenure['team'] == 'Rangers'].groupby('tenure').mean().reset_index().drop(['tm_acct_id'], axis = 1)
+sns.regplot(rangers_tenure['tenure'], rangers_tenure['renewed'], rangers_tenure, color = 'blue')
+plt.title('The Impact of Tenure on Renewals')
+plt.savefig('tenure_17.png')
+plt.show()
+'''
+knicks_tenure_50 = knicks_tenure[knicks_tenure['tenure'] < 50]
+sns.regplot(knicks_tenure_50['tenure'], knicks_tenure_50['renewed'], knicks_tenure_50)
+rangers_tenure_50 = rangers_tenure[rangers_tenure['tenure'] < 50]
+sns.regplot(rangers_tenure_50['tenure'], rangers_tenure_50['renewed'], rangers_tenure_50)
+'''
+
 data['tenure_group'] = 'Rookie'
 for i in data.index:
 	if (data.loc[i,'tenure'] > 20 and data.loc[i,'tenure_group'] == 'Rookie') == True:
