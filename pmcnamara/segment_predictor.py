@@ -6,7 +6,7 @@ import glob
 import os
 from sklearn.linear_model import LogisticRegression
 from sklearn import metrics, cross_validation, LogisticRegression
-from hep_ml.reweight import BinsReweighter, GBReweighter
+from hep_ml.reweight import GBReweighter
 
 # importing segment flags #
 knicks = pd.read_excel('/Users/mcnamarp/Downloads/MSG Segmentation phase_20170418_Knicks.xlsx', sheetname = 'Knicks')[['uuid','Segment Knicks']]
@@ -45,18 +45,6 @@ survey_data['Q33r2'].fillna(0, inplace = True)
 survey_data.set_index('uuid', inplace = True)
 dummies = pd.get_dummies(survey_data[['Q30','Q31','Q32','Q34']])
 survey_data = survey_data.drop(['Q30','Q31','Q32','Q34'], axis = 1).join(dummies)
-'''
-datah = survey_data.dropna(subset = ['Segment Rangers']).drop(['vspt','Segment Knicks','source','Sample'], axis = 1)
-datab = survey_data.dropna(subset = ['Segment Knicks']).drop(['vspt','Segment Rangers','source','Sample'], axis = 1)
-
-xb, yb = datab.drop(['Segment Knicks'], axis = 1), datab['Segment Knicks']
-datab['pred'] = OneVsRestClassifier(LinearSVC(random_state=0)).fit(xb, yb).predict(xb)
-len(datab[datab['Segment Knicks'] == datab['pred']])/float(len(datab))
-
-xh, yh = datah.drop(['Segment Rangers'], axis = 1), datah['Segment Rangers']
-datah['pred'] = OneVsRestClassifier(LinearSVC(random_state=0)).fit(xh, yh).predict(xh)
-len(datah[datah['Segment Rangers'] == datah['pred']])/float(len(datah))
-'''
 
 # mapping respondents via Nat's files and combining #
 
@@ -74,7 +62,7 @@ SELECT email, (now()::DATE - tenure_start)/365::INT AS tenure, description, rege
 SELECT lower(email_address) AS email, tm_season_name, SUM(tickets_sold) AS tickets, ticket_product_description AS description, 
 CASE WHEN ticket_product_description = 'Individuals' THEN NULL ELSE tenure_start_date::DATE END AS tenure_start, SUM(CASE WHEN tm_price_code_desc = 'Madison Club' THEN 500 ELSE tickets_total_revenue END) AS cost
 FROM ads_main.t_ticket_sales_event_seat A
-WHERE tm_season_name IN ('2016-17 New York Knicks','2016-17 New York Rangers') AND tm_comp_code = '0'
+WHERE tm_season_name IN ('2016-17 New York Knicks','2016-17 New York Rangers') AND tm_comp_code = '0' AND email_address IS NOT NULL
 GROUP BY email_address, tenure_start_date, ticket_product_description, tm_season_name) A;
 '''
 tm_revenue = pd.read_sql(revenue_query, engine)
@@ -83,34 +71,23 @@ rangers_purchasers = tm_revenue[tm_revenue['team'] == 'Rangers']['email'].dropna
 tm_revenue = pd.pivot_table(tm_revenue.drop(['tenure'], axis = 1), index = ['email'], columns = ['team','description'], fill_value = 0)
 tm_revenue.columns = [e[0] + e[1] + e[2] for e in tm_revenue.columns.tolist()]
 
-datab = pd.merge(data[data['email'].isin(knicks_purchasers.dropna())], tm_revenue, left_on ='email', right_index = True, how = 'right').drop(['vspt','uid','Sample','email'], axis = 1)
-datah = pd.merge(data[data['email'].isin(rangers_purchasers.dropna())], tm_revenue, left_on ='email', right_index = True, how = 'right').drop(['vspt','uid','Sample','email'], axis = 1)
+datab = data[data['email'].isin(knicks_purchasers)]
+datab = pd.merge(datab, tm_revenue, left_on ='email', right_index = True, how = 'right').drop(['vspt','uid','Sample','Segment Rangers'], axis = 1)
+datah = data[data['email'].isin(rangers_purchasers)]
+datah = pd.merge(datah, tm_revenue, left_on ='email', right_index = True, how = 'right').drop(['vspt','uid','Sample', 'Segment Knicks'], axis = 1)
 
-'''
-for j in [x for x in targets.columns if "Rangers" not in x]
-xb, yb = datab.drop(['Segment Knicks'], axis = 1), datab['Segment Knicks']
-resultsb = []
-for i in range(1,501):
-	resultsb.append(OneVsRestClassifier(LinearSVC(random_state=i)).fit(xb, yb).score(xb,yb))
 
-np.mean(resultsb)
-
-for j in [x for x in targets.columns if "Knicks" not in x]:
-xh, yh = datah.drop(['Segment Rangers'], axis = 1), datah['Segment Rangers']
-resultsh = []
-for i in range(1,501):
-	resultsh.append(OneVsRestClassifier(LinearSVC(random_state=i)).fit(xh, yh).score(xb,yb))
-
-np.mean(resultsh)
-'''
 # CREATING SAMPLE WEIGHTS # (https://arogozhnikov.github.io/hep_ml/reweight.html)
-res_cols = list(tm_revenue.columns)
-res_cols.extend(['segment'])
-resampling_data = datab[res_cols]
-sample = resampling_data.dropna(subset = ['segment']).drop(['segment'], axis = 1)
-full = resampling_data[pd.isnull(resampling_data['segment'])].drop(['segment'], axis = 1)
-reweighter.fit(original = sample, target=full)
-reweighter.predict_weights(sample)
+res_cols = list(tm_revenue.reset_index().columns)
+resampling_b = datab[['Segment Knicks'] + res_cols]
+resampling_h = datah[['Segment Rangers'] + res_cols]
+sampleb = resampling_b.dropna(subset = ['Segment Knicks']).drop(['Segment Knicks'], axis = 1).set_index('email')
+fullb = resampling_b[pd.isnull(resampling_b['Segment Knicks'])].drop(['Segment Knicks'], axis = 1).set_index('email')
+sampleh = resampling_h.dropna(subset = ['Segment Rangers']).drop(['Segment Rangers'], axis = 1).set_index('email')
+fullh = resampling_h[pd.isnull(resampling_h['Segment Rangers'])].drop(['Segment Rangers'], axis = 1).set_index('email')
+reweighter = GBReweighter(learning_rate = 0.01, max_depth = 12)
+sampleb['weight'] = reweighter.fit(original = sampleb, target=fullb).predict_weights(sample).round(2)
+sampleh['weight'] = reweighter.fit(original = sampleh, target=fullh).predict_weights(sample).round(2)
 
 # PREDICTING SEGMENTS #
 targets = data[['uid','vspt','segment']].set_index('uid')
