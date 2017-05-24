@@ -76,7 +76,6 @@ datab = pd.merge(datab, tm_revenue, left_on ='email', right_index = True, how = 
 datah = data[data['email'].isin(rangers_purchasers)]
 datah = pd.merge(datah, tm_revenue, left_on ='email', right_index = True, how = 'right').drop(['vspt','uid','Sample', 'Segment Knicks'], axis = 1)
 
-
 # CREATING SAMPLE WEIGHTS # (https://arogozhnikov.github.io/hep_ml/reweight.html)
 res_cols = list(tm_revenue.reset_index().columns)
 resampling_b = datab[['Segment Knicks'] + res_cols]
@@ -86,17 +85,41 @@ fullb = resampling_b[pd.isnull(resampling_b['Segment Knicks'])].drop(['Segment K
 sampleh = resampling_h.dropna(subset = ['Segment Rangers']).drop(['Segment Rangers'], axis = 1).set_index('email')
 fullh = resampling_h[pd.isnull(resampling_h['Segment Rangers'])].drop(['Segment Rangers'], axis = 1).set_index('email')
 reweighter = GBReweighter(learning_rate = 0.01, max_depth = 12)
-sampleb['weight'] = reweighter.fit(original = sampleb, target=fullb).predict_weights(sample).round(2)
-sampleh['weight'] = reweighter.fit(original = sampleh, target=fullh).predict_weights(sample).round(2)
+sampleb['weight'] = reweighter.fit(original = sampleb, target=fullb).predict_weights(sampleb).round(3)
+sampleh['weight'] = reweighter.fit(original = sampleh, target=fullh).predict_weights(sampleh).round(3)
 
+# LOGIT MODELING #
+modeling_bball = pd.merge(data[data['vspt'] == 'basketball'], sampleb['weight'].reset_index(), on = 'email').drop(['vspt','Sample','email','Segment Rangers'], axis = 1).set_index('uid')
+modeling_hockey = pd.merge(data[data['vspt'] == 'hockey'], sampleh['weight'].reset_index(), on = 'email').drop(['vspt','Sample','email','Segment Knicks'], axis = 1).set_index('uid')
+
+knicks_scores = []
+for i in range(5000):
+	train = modeling_bball.sample(frac = 0.65)
+	test = modeling_bball.loc[~modeling_bball.index.isin(train.index)]
+	mdl = LogisticRegression().fit(train.drop(['Segment Knicks','weight'], axis= 1), train['Segment Knicks'], sample_weight = train['weight'])
+	knicks_scores.append(mdl.score(test.drop(['Segment Knicks','weight'], axis= 1), test['Segment Knicks']))
+
+rangers_scores = []
+for i in range(5000):
+	train = modeling_hockey.sample(frac = 0.65)
+	test = modeling_hockey.loc[~modeling_hockey.index.isin(train.index)]
+	mdl = LogisticRegression().fit(train.drop(['Segment Rangers','weight'], axis= 1), train['Segment Rangers'])
+	rangers_scores.append(mdl.score(test.drop(['Segment Rangers','weight'], axis= 1), test['Segment Rangers']))
+
+predicted_b = cross_validation.cross_val_predict(ogisticRegression().fit(modeling_bball.drop(['Segment Knicks','weight'], axis= 1), modeling_bball['Segment Knicks'], sample_weight = modeling_bball['weight']), modeling_bball.drop(['Segment Knicks','weight'], axis= 1), modeling_bball['Segment Knicks'], cv=10)
+metrics.accuracy_score(modeling_bball['Segment Knicks'], predicted_b)
+print metrics.classification_report(modeling_bball['Segment Knicks'], predicted_b)
+print metrics.confusion_matrix(modeling_bball['Segment Knicks'], predicted_b)
+
+'''
 # PREDICTING SEGMENTS #
 targets = data[['uid','vspt','segment']].set_index('uid')
 targets['Segment'] = targets['vspt'].astype(str) + '_' + targets['segment'].astype(str)
 targets = pd.get_dummies(targets['Segment']).drop(['basketball_nan','hockey_nan'], axis = 1)
 data = data.set_index('uid').join(targets)
 
-datah = data[data['vspt'] == 'hockey'].drop(['vspt','Sample','email','segment'], axis = 1)
-datab = data[data['vspt'] == 'basketball'].drop(['vspt','Sample','email','segment'], axis = 1)
+datah2 = data[data['vspt'] == 'hockey'].drop(['vspt','Sample','email','Segment Knicks'], axis = 1).set_index('uid')
+datab2 = data[data['vspt'] == 'basketball'].drop(['vspt','Sample','email','Segment Rangers'], axis = 1).set_index('uid')
 
 clf = GaussianNB()
 target_columnsb = [x for x in targets.columns if "hockey" not in x]
@@ -107,12 +130,4 @@ for j in target_columnsb:
 target_columnsh = [x for x in targets.columns if "basketball" not in x]
 for j in targets_columnsh:
 	xh, yh = datah.drop(targets_columnsh, axis = 1), datah[jd]
-
-# LOGIT MODELING #
-modeling_bball = survey_data[survey_data['vspt'] == 'basketball'].dropna(subset = ['Segment Knicks']).drop(['source','Sample','vspt'], axis = 1)
-modeling_hockey = survey_data[survey_data['vspt'] == 'hockey'].dropna(subset = ['Segment Rangers']).drop(['source','Sample','vspt'], axis = 1)
-
-predicted_b = cross_validation.cross_val_predict(LogisticRegression(), modeling_bball.drop(['Segment Knicks','Segment Rangers'], axis= 1), modeling_bball['Segment Knicks'], cv=10)
-metrics.accuracy_score(modeling_bball['Segment Knicks'], predicted_b)
-print metrics.classification_report(modeling_bball['Segment Knicks'], predicted_b)
-print metrics.confusion_matrix(modeling_bball['Segment Knicks'], predicted_b)
+'''
