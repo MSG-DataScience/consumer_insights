@@ -84,7 +84,7 @@ sampleb = resampling_b.dropna(subset = ['Segment Knicks']).drop(['Segment Knicks
 fullb = resampling_b[pd.isnull(resampling_b['Segment Knicks'])].drop(['Segment Knicks'], axis = 1).set_index('email')
 sampleh = resampling_h.dropna(subset = ['Segment Rangers']).drop(['Segment Rangers'], axis = 1).set_index('email')
 fullh = resampling_h[pd.isnull(resampling_h['Segment Rangers'])].drop(['Segment Rangers'], axis = 1).set_index('email')
-reweighter = GBReweighter(learning_rate = 0.01, max_depth = 12)
+reweighter = GBReweighter()
 sampleb['weight'] = reweighter.fit(original = sampleb, target=fullb).predict_weights(sampleb).round(3)
 sampleh['weight'] = reweighter.fit(original = sampleh, target=fullh).predict_weights(sampleh).round(3)
 
@@ -92,42 +92,29 @@ sampleh['weight'] = reweighter.fit(original = sampleh, target=fullh).predict_wei
 modeling_bball = pd.merge(data[data['vspt'] == 'basketball'], sampleb['weight'].reset_index(), on = 'email').drop(['vspt','Sample','email','Segment Rangers'], axis = 1).set_index('uid')
 modeling_hockey = pd.merge(data[data['vspt'] == 'hockey'], sampleh['weight'].reset_index(), on = 'email').drop(['vspt','Sample','email','Segment Knicks'], axis = 1).set_index('uid')
 
-knicks_scores = []
-for i in range(5000):
-	train = modeling_bball.sample(frac = 0.65)
+knicks_scores = pd.DataFrame(columns = range(0,6))
+reweighter = GBReweighter()
+for i in range(10000):
+	train = modeling_bball.sample(frac = 0.8, random_state = i)
 	test = modeling_bball.loc[~modeling_bball.index.isin(train.index)]
 	mdl = LogisticRegression().fit(train.drop(['Segment Knicks','weight'], axis= 1), train['Segment Knicks'], sample_weight = train['weight'])
-	knicks_scores.append(mdl.score(test.drop(['Segment Knicks','weight'], axis= 1), test['Segment Knicks']))
+	temp = pd.DataFrame(mdl.predict_proba(test.drop(['Segment Knicks','weight'], axis= 1)))
+	temp['Segment'] = test['Segment Knicks'].values
+	knicks_scores = knicks_scores.append(temp)
 
-rangers_scores = []
-for i in range(5000):
-	train = modeling_hockey.sample(frac = 0.65)
+knicks_scores.columns = [1,2,3,4,5,6,'Segment']
+knicks_scores['max'] = knicks_scores.drop(['Segment'], axis = 1).idxmax(axis=1)
+data['Segment Knicks'].value_counts()/len(datab['Segment Knicks'].dropna())
+
+rangers_scores = pd.DataFrame(columns = np.arange(10,210,10))
+for i in range(1000):
+	train = modeling_hockey.sample(frac = 0.8)
 	test = modeling_hockey.loc[~modeling_hockey.index.isin(train.index)]
-	mdl = LogisticRegression().fit(train.drop(['Segment Rangers','weight'], axis= 1), train['Segment Rangers'])
-	rangers_scores.append(mdl.score(test.drop(['Segment Rangers','weight'], axis= 1), test['Segment Rangers']))
+	mdl = LogisticRegression().fit(train.drop(['Segment Rangers','weight'], axis= 1), train['Segment Rangers'], sample_weight = train['weight'])
+	scores.append(mdl.score(test.drop(['Segment Rangers','weight'], axis= 1), test['Segment Rangers']))
+	rangers_scores[j] = scores
 
 predicted_b = cross_validation.cross_val_predict(ogisticRegression().fit(modeling_bball.drop(['Segment Knicks','weight'], axis= 1), modeling_bball['Segment Knicks'], sample_weight = modeling_bball['weight']), modeling_bball.drop(['Segment Knicks','weight'], axis= 1), modeling_bball['Segment Knicks'], cv=10)
 metrics.accuracy_score(modeling_bball['Segment Knicks'], predicted_b)
 print metrics.classification_report(modeling_bball['Segment Knicks'], predicted_b)
 print metrics.confusion_matrix(modeling_bball['Segment Knicks'], predicted_b)
-
-'''
-# PREDICTING SEGMENTS #
-targets = data[['uid','vspt','segment']].set_index('uid')
-targets['Segment'] = targets['vspt'].astype(str) + '_' + targets['segment'].astype(str)
-targets = pd.get_dummies(targets['Segment']).drop(['basketball_nan','hockey_nan'], axis = 1)
-data = data.set_index('uid').join(targets)
-
-datah2 = data[data['vspt'] == 'hockey'].drop(['vspt','Sample','email','Segment Knicks'], axis = 1).set_index('uid')
-datab2 = data[data['vspt'] == 'basketball'].drop(['vspt','Sample','email','Segment Rangers'], axis = 1).set_index('uid')
-
-clf = GaussianNB()
-target_columnsb = [x for x in targets.columns if "hockey" not in x]
-for j in target_columnsb:
-	xb, yb = datab.drop(targets.columns, axis = 1), datab[j]
-	clf.fit(xb.values,yb.values).predict_proba(xb).T[0]
-
-target_columnsh = [x for x in targets.columns if "basketball" not in x]
-for j in targets_columnsh:
-	xh, yh = datah.drop(targets_columnsh, axis = 1), datah[jd]
-'''
