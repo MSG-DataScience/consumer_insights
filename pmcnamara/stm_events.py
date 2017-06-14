@@ -3,6 +3,10 @@ import sqlalchemy
 import redshift_sqlalchemy
 import statsmodels.api as sm
 import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.decomposition import PCA
+from sklearn.preprocessing import scale
 
 # IMPORT RANGERS RSVPs #
 nyr_fan_forum = pd.read_excel('/Users/mcnamarp/Downloads/STM Events/Rangers Fan Forum Mail Merge 0109.xlsx', sheetname = 'temp')[['acct_id','email_addr','tag','acct_type']]
@@ -38,17 +42,26 @@ event_data['Attended'].replace({0:'No'}, inplace = True)
 #event_data.replace({'RSVP':{'Yes':1}}, inplace = True)
 event_data = event_data.drop(['Guests Anticipated','Guests Attended','Event'], axis = 1).drop_duplicates().groupby(['team','Ticket Holders']).max().reset_index()
 
-engine = sqlalchemy.create_engine("redshift+psycopg2://mcnamarp:Welcome2859!@msgbiadb-prod.cqp6htpq4zp6.us-east-1.rds.amazonaws.com:5432/msgbiadb")
+engine = sqlalchemy.create_engine("redshift+psycopg2://USERNAME:PASSWORD@msgbiadb-prod.cqp6htpq4zp6.us-east-1.rds.amazonaws.com:5432/msgbiadb")
 renewals_query = '''
 SELECT DISTINCT tm_acct_id, lower(email_address) AS email, tm_plan_event_name, regexp_replace(tm_season_name, '^.* ', '') AS team, (NOW()::DATE-tenure_start_date::DATE)/365 AS tenure
 FROM ads_main.t_ticket_sales_event_seat
-WHERE tm_plan_event_name IN ('16KFS','17KFS','16RFS','17RFS')
+WHERE SUBSTRING(tm_plan_event_name,1,5) IN ('16KFS','17KFS','16RFS','17RFS')
 '''
 renewals = pd.read_sql(renewals_query, engine)
 
 # REMOVE 2017 FIRST-TIME PLANS #
 renewals = renewals[renewals['tenure'] > 0]
 renewals.ix[renewals['email'] == 'yvavdiyuk@nydailynews.com', 'email'] = 'nmaheshwari@nydailynews.com'
+
+# REMOVE HVBS #
+knicks_hvbs = pd.read_excel('/Users/mcnamarp/Downloads/handler extract - Knicks 2016-17 full season accounts.xlsx', sheetname = 'HVBs')['Acct Id']
+knicks_hvbs = list(renewals[(renewals['tm_acct_id'].isin(knicks_hvbs)) & (renewals['team'] == 'Knicks')].index)
+rangers_hvbs = pd.read_excel('/Users/mcnamarp/Downloads/handler extract - rangers 2016-17 full season accounts.xlsx', sheetname = 'HVBs')['Acct Id']
+rangers_hvbs = list(renewals[(renewals['tm_acct_id'].isin(rangers_hvbs)) & (renewals['team'] == 'Rangers')].index)
+
+renewals = renewals[~renewals.index.isin(rangers_hvbs+knicks_hvbs)]
+
 renewals = renewals.drop_duplicates()
 renewal_rates = renewals.groupby(['tm_acct_id','email','team']).count()['tm_plan_event_name'].reset_index().rename(columns = {'tm_plan_event_name':'renewed'})
 renewal_rates['renewed'] = renewal_rates['renewed'] - 1
@@ -82,6 +95,12 @@ data[data['RSVP'] == 'Yes'].groupby(['tm_acct_id','team','renewed','retention_se
 data[data['retention_segment'] == 'At Risk'].groupby(['tm_acct_id','team','renewed']).max()['RSVP'].reset_index().groupby(['team','RSVP']).mean()['renewed']
 data[data['retention_segment'] == 'At Risk'].groupby(['tm_acct_id','team','renewed']).max()['Attended'].reset_index().groupby(['team','Attended']).mean()['renewed']
 data[(data['retention_segment'] == 'Rookie') & (data['RSVP'] == 'Yes')].groupby(['tm_acct_id','team','renewed']).max()['Attended'].reset_index().groupby(['team','Attended']).mean()['renewed']
+
+# ADDING EMAIL OPENS DATA #
+knicks_opens = pd.read_excel('/Users/mcnamarp/Downloads/Knicks Emails - STM events.xlsx', sheetname = 'Data', parse_cols = [1,5,14])
+knicks_opens = knicks_opens[knicks_opens['email_name'] != '160929 MSG NYK Open Practice MISC NEWS']
+rangers_opens = pd.read_excel('/Users/mcnamarp/Downloads/Rangers Emails - STM events.xlsx', sheetname = 'Data', parse_cols = [1,5,14])
+data = data[data['email'].isin(knicks_opens[knicks_opens['distinctopencnt'] == 1]['email_address'])].append(data[data['email'].isin(rangers_opens[rangers_opens['distinctopencnt'] == 1]['email_address'])])
 
 # COMBINING WITH DEMOGRAPHICS DATA #
 demo_indexes = pd.read_csv('/Users/mcnamarp/Downloads/Customer Infobase_170425.txt', usecols = ['EMAIL','INDIVIDUAL_ID'])
@@ -131,7 +150,6 @@ knicks_tenure_50 = knicks_tenure[knicks_tenure['tenure'] < 50]
 sns.regplot(knicks_tenure_50['tenure'], knicks_tenure_50['renewed'], knicks_tenure_50)
 rangers_tenure_50 = rangers_tenure[rangers_tenure['tenure'] < 50]
 sns.regplot(rangers_tenure_50['tenure'], rangers_tenure_50['renewed'], rangers_tenure_50)
-'''
 
 data['tenure_group'] = 'Rookie'
 for i in data.index:
@@ -143,3 +161,32 @@ for i in data.index:
 		data.loc[i,'tenure_group'] = '6_10'
 	if (data.loc[i,'tenure'] > 1 and data.loc[i,'tenure_group'] == 'Rookie') == True:
 		data.loc[i,'tenure_group'] = '2_5'
+'''
+
+# FIND IDEAL NUMBER OF COMPONENTS #
+X = scale(modeling_hockey)
+pca = PCA(n_components=35)
+pca.fit(X)
+var= pca.explained_variance_ratio_
+var1=np.cumsum(np.round(pca.explained_variance_ratio_, decimals=4)*100)
+plt.plot(var1)
+
+for n_cluster in range(2, 11):
+    kmeans = KMeans(n_clusters=n_cluster).fit(modeling_hockey)
+    label = kmeans.labels_
+    sil_coeff = silhouette_score(modeling_hockey, label, metric='euclidean')
+    print("For n_clusters={}, The Silhouette Coefficient is {}".format(n_cluster, sil_coeff))
+
+s = []
+for n_clusters in range(2,30):
+    kmeans = KMeans(n_clusters=n_clusters)
+    kmeans.fit(modeling_bball)
+    labels = kmeans.labels_
+    centroids = kmeans.cluster_centers_
+    s.append(silhouette_score(modeling_bball, labels, metric='euclidean'))
+
+plt.plot(s)
+plt.ylabel("Silouette")
+plt.xlabel("k")
+plt.title("Silouette for K-means cell's behaviour")
+sns.despine()

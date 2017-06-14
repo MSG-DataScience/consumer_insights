@@ -61,25 +61,3 @@ pylab.show()
 rangers_all = tm_revenue[(tm_revenue['team'] == 'Rangers') & (tm_revenue['cost'] < 10000)]['cost']
 stats.probplot(rangers_all, plot = pylab)
 pylab.show()
-
-
-'''
-nat_emails_test = x[x['email'] != x['Email']]['Email']
-nat_emails = str(list(nat_emails_test.replace({'to\'rourke@carrxerox.com':'rourke@carrxerox.com'}).astype(str).values))
-nat_emails = nat_emails.replace('\"','').replace('[','').replace(']','').replace(', to\'r',', \r')
-nat_email_query = '''SELECT * FROM ads_main.t_ticket_sales_event_seat WHERE tm_season_name IN ('2016-17 New York Knicks','2016-17 New York Rangers') AND lower(email_address) IN (''' + nat_emails + ''')'''.strip('\\n')
-nat_emails_mapped = pd.read_sql(nat_email_query, engine)
-
-pd.pivot_table(data[data['team'] == 'Knicks'], values = 'cost', index = 'description', columns='segment').fillna(0).astype(int)
-pd.pivot_table(data[data['team'] == 'Knicks'], values = 'tickets', index = 'description', columns='segment').fillna(0).astype(int)
-pd.pivot_table(data[data['team'] == 'Knicks'], values = 'avg_ticket', index = 'description', columns='segment').fillna(0).astype(int)
-pd.pivot_table(data[data['team'] == 'Rangers'], values = 'cost', index = 'description', columns='segment').fillna(0).astype(int)
-pd.pivot_table(data[data['team'] == 'Rangers'], values = 'tickets', index = 'description', columns='segment').fillna(0).astype(int)
-pd.pivot_table(data[data['team'] == 'Rangers'], values = 'avg_ticket', index = 'description', columns='segment').fillna(0).astype(int)
-
-# mapping respondents via Dave's files #
-id_mapping1 = pd.read_excel('/Users/mcnamarp/Downloads/Survey update 4.xlsx', sheetname = 'Master List')[['uid','acct_id']]
-id_mapping2 = pd.read_excel('/Users/mcnamarp/Downloads/Survey update 4.xlsx', sheetname = 'Master List (2)')[['uid','acct_id']]
-id_mapping = id_mapping1.append(id_mapping2)
-id_mapping['acct_id'] = id_mapping['acct_id'].astype(str)
-'''
