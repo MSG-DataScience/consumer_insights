@@ -12,6 +12,8 @@ from hep_ml.reweight import GBReweighter
 knicks = pd.read_excel('/Users/mcnamarp/Downloads/MSG Segmentation phase_20170418_Knicks.xlsx', sheetname = 'Knicks')[['uuid','Segment Knicks']]
 rangers = pd.read_excel('/Users/mcnamarp/Downloads/MSG Segmentation phase_20170418_Rangers.xlsx', sheetname = 'Rangers')[['uuid','Segment Rangers']]
 '''
+
+
 # creating labels #
 segment_labels_knicks = pd.DataFrame(index = range(1,7), columns = ['segment'])
 segment_labels_knicks['segment'] = ['Emo-Social','Purist','Root home','Competitor','Die-hards','Old Faithful']
