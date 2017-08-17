@@ -300,7 +300,7 @@ group['daysleft']=group['daysleft'].apply(lambda x:int(x))
 group['number']=group['count']
 group=group[group.daysleft>=0]
 
-lala=data.groupby(by=['tm_event_name','daysleft']).sum().sort_index(ascending=False).groupby(level=[0])['count','tickets_purchase_price'].cumsum().reset_index()
+lala=group.groupby(by=['tm_event_name','daysleft']).sum().sort_index(ascending=False).groupby(level=[0])['count','tickets_purchase_price'].cumsum().reset_index()
 lala=lala.rename(columns = {'count':'cumsum','tickets_purchase_price':'cumprice'})
 lala['avg']=lala['cumprice']/lala['cumsum']
 data=pd.merge(data,lala,how='left',on=['tm_event_name','daysleft'])
