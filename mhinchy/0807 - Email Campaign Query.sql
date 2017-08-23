@@ -2,12 +2,13 @@ select
 sj.exctgt_send_id as send_id, 
 sj.exctgt_sendjob_id , 
 sj.exctgt_sched_time as exctgt_email_send_time, 
-dt.full_date
+dt.full_date,
 sj.exctgt_email_name as email_name , 
 sj.exctgt_business_unit_name ,
 sj.exctgt_subject ,
 kpi.exctgt_campaign_code,
 kpi.exctgt_cell_code,
+sj.exctgt_from_name,
 sum(kpi.exctgt_email_sent_count) as emails_sent,
 sum(kpi.exctgt_email_delivered_count) as emails_delivered, 
 sum(kpi.exctgt_email_bounced_count) as emails_bounced, 
@@ -52,29 +53,29 @@ when upper(sj.exctgt_business_unit_name) SIMILAR  to upper('%Festival%') then 'L
 else 'Unmapped'
 end as Brand,
 case 
-																when upper(sj.exctgt_business_unit_name) SIMILAR  to upper('%Weekly%' ) then 'Weekly Newsletter'
-                                                                when upper(sj.exctgt_business_unit_name) SIMILAR  to upper('%Pregame%' ) AND upper(sj.exctgt_email_name) SIMILAR TO upper('%ATT %' ) then 'Pregame - Purchased'
-                                                                when upper(sj.exctgt_business_unit_name) SIMILAR  to upper('%Pregame%' ) AND upper(sj.exctgt_email_name) SIMILAR TO upper('%NA %' ) then 'Pregame - Not Purchased'
-                                                                when upper(sj.exctgt_business_unit_name) SIMILAR  to upper('%Pregame%' ) AND upper(sj.exctgt_email_name) SIMILAR TO upper('%Away %' ) then 'Pregame - Away'
-                                                                when upper(sj.exctgt_business_unit_name) SIMILAR  to upper('%Pregame%')  then 'Pregame'
-                                                                when upper(sj.exctgt_email_name) SIMILAR TO upper('% Combo%' ) then 'Combo'
-                                                                when upper(sj.exctgt_email_name) SIMILAR TO upper('% Value%' ) then 'Value'
-                                                                when upper(sj.exctgt_email_name) SIMILAR TO upper('% RENW%' ) or  upper(sj.exctgt_email_name) SIMILAR TO upper('% Renew%' ) then 'Renewal'
-                                                                when upper(sj.exctgt_email_name) SIMILAR TO upper('% Psh%' ) or  upper(sj.exctgt_email_name) SIMILAR TO upper('% preshow%' )then 'Preshow'
-																when upper(sj.exctgt_email_name) SIMILAR TO upper('% Pre%' ) then 'Presale'
-                                                                when upper(sj.exctgt_email_name) SIMILAR TO upper('% DISC%' ) or  upper(sj.exctgt_email_name) SIMILAR TO upper('% OFF%' ) then 'Discount'
-                                                                when upper(sj.exctgt_email_name) SIMILAR TO upper('% EOS%' ) then 'Early On Sale'
-                                                                when upper(sj.exctgt_email_name) SIMILAR TO upper('% RMDR%' ) then 'Reminder'
-                                                                when upper(sj.exctgt_email_name) SIMILAR TO upper('%PARTNR%' )or  upper(sj.exctgt_email_name) SIMILAR TO upper('%PRTNR%' )then 'Partner Offer' 
-																when upper(sj.exctgt_email_name) SIMILAR TO upper('%SURVEY%' ) then 'Survey'
-																when upper(sj.exctgt_business_unit_name) SIMILAR  to upper('%Insights%') then 'Survey'
-                                                                when upper(sj.exctgt_business_unit_name) SIMILAR  to upper('%Youth%') then 'Juniors' 
-																when upper(sj.exctgt_email_name) SIMILAR TO upper('% YH %' ) then 'Juniors' 			
-																when upper(sj.exctgt_email_name) SIMILAR TO upper('% Chase %' ) then 'Chase Lounge' 
-																when upper(sj.exctgt_email_name) SIMILAR TO upper('% STH%' ) or  upper(sj.exctgt_email_name) SIMILAR TO upper('% STM%' ) or  upper(sj.exctgt_email_name) SIMILAR TO upper('% MINI%' ) or  upper(sj.exctgt_email_name) SIMILAR TO upper('% HALF%' )then 'STM'
-                                                                when upper(sj.exctgt_email_name) SIMILAR TO upper('% ONS%' ) or  upper(sj.exctgt_email_name) SIMILAR TO upper('%ON Sa%' )then 'Onsale'                                                             
-                                                                else 'Miscellaneous'
-                                                end as EmailCategory 
+when upper(sj.exctgt_business_unit_name) SIMILAR  to upper('%Weekly%' ) then 'Weekly Newsletter'
+when upper(sj.exctgt_business_unit_name) SIMILAR  to upper('%Pregame%' ) AND upper(sj.exctgt_email_name) SIMILAR TO upper('%ATT %' ) then 'Pregame - Purchased'
+when upper(sj.exctgt_business_unit_name) SIMILAR  to upper('%Pregame%' ) AND upper(sj.exctgt_email_name) SIMILAR TO upper('%NA %' ) then 'Pregame - Not Purchased'
+when upper(sj.exctgt_business_unit_name) SIMILAR  to upper('%Pregame%' ) AND upper(sj.exctgt_email_name) SIMILAR TO upper('%Away %' ) then 'Pregame - Away'
+when upper(sj.exctgt_business_unit_name) SIMILAR  to upper('%Pregame%')  then 'Pregame'
+when upper(sj.exctgt_email_name) SIMILAR TO upper('% Combo%' ) then 'Combo'
+when upper(sj.exctgt_email_name) SIMILAR TO upper('% Value%' ) then 'Value'
+when upper(sj.exctgt_email_name) SIMILAR TO upper('% RENW%' ) or  upper(sj.exctgt_email_name) SIMILAR TO upper('% Renew%' ) then 'Renewal'
+when upper(sj.exctgt_email_name) SIMILAR TO upper('% Psh%' ) or  upper(sj.exctgt_email_name) SIMILAR TO upper('% preshow%' )then 'Preshow'
+when upper(sj.exctgt_email_name) SIMILAR TO upper('% Pre%' ) then 'Presale'
+when upper(sj.exctgt_email_name) SIMILAR TO upper('% DISC%' ) or  upper(sj.exctgt_email_name) SIMILAR TO upper('% OFF%' ) then 'Discount'
+when upper(sj.exctgt_email_name) SIMILAR TO upper('% EOS%' ) then 'Early On Sale'
+when upper(sj.exctgt_email_name) SIMILAR TO upper('% RMDR%' ) then 'Reminder'
+when upper(sj.exctgt_email_name) SIMILAR TO upper('%PARTNR%' )or  upper(sj.exctgt_email_name) SIMILAR TO upper('%PRTNR%' )then 'Partner Offer' 
+when upper(sj.exctgt_email_name) SIMILAR TO upper('%SURVEY%' ) then 'Survey'
+when upper(sj.exctgt_business_unit_name) SIMILAR  to upper('%Insights%') then 'Survey'
+when upper(sj.exctgt_business_unit_name) SIMILAR  to upper('%Youth%') then 'Juniors' 
+when upper(sj.exctgt_email_name) SIMILAR TO upper('% YH %' ) then 'Juniors' 			
+when upper(sj.exctgt_email_name) SIMILAR TO upper('% Chase %' ) then 'Chase Lounge' 
+when upper(sj.exctgt_email_name) SIMILAR TO upper('% STH%' ) or  upper(sj.exctgt_email_name) SIMILAR TO upper('% STM%' ) or  upper(sj.exctgt_email_name) SIMILAR TO upper('% MINI%' ) or  upper(sj.exctgt_email_name) SIMILAR TO upper('% HALF%' )then 'STM'
+when upper(sj.exctgt_email_name) SIMILAR TO upper('% ONS%' ) or  upper(sj.exctgt_email_name) SIMILAR TO upper('%ON Sa%' )then 'Onsale'                                                             
+else 'Miscellaneous'
+end as EmailCategory 
 from ads_main.f_exctgt_job_kpis kpi
 left join  ads_main.d_exctgt_sendjobs sj
             on sj.exctgt_sendjob_id=kpi.exctgt_sendjob_id
@@ -82,10 +83,14 @@ right join ads_main.d_date dt
 on kpi.exctgt_email_send_day_id=dt.day_id
 where 1=1
 and  sj.exctgt_job_status = 'Complete'
-and sj.exctgt_business_unit_name like 'Ranger%'
+--and sj.exctgt_business_unit_name like 'Ranger%'
 and kpi.exctgt_email_address not like '%msg.com'
 and kpi.exctgt_email_address not like '%thegarden.com'
-and sj.exctgt_sched_time between cast('01/01/2017' as timestamp) and cast('04/30/2017' as timestamp)
+and kpi.exctgt_email_address not like '%emailonacid.com'
+and upper(kpi.exctgt_cell_code) not like upper('SEED%')
+and upper(kpi.exctgt_campaign_code) not like upper('%BRIGIDTESTLIST%')
+and upper(kpi.exctgt_campaign_code) not like upper('%TEST_%')
+--and sj.exctgt_sched_time between cast('01/01/2017' as timestamp) and cast('04/30/2017' as timestamp)
 group by sj.exctgt_send_id, 
 sj.exctgt_sendjob_id ,
 sj.exctgt_sched_time, 
@@ -93,5 +98,7 @@ sj.exctgt_email_name ,
 sj.exctgt_business_unit_name, 
 sj.exctgt_subject,
 kpi.exctgt_campaign_code,
-kpi.exctgt_cell_code
+kpi.exctgt_cell_code,
+dt.full_date,
+sj.exctgt_from_name
 order by sj.exctgt_send_id, sj.exctgt_sched_time
