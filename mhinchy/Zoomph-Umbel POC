@@ -1,0 +1,74 @@
+WITH STMS1 AS
+(SELECT
+SUM(tickets_sold) AS tickets_sold, 
+SUM(tickets_total_net_revenue) AS tickets_total_net_revenue, 
+b.tm_acct_id,
+b.customer_master_index,
+b.name_first,
+b.name_mi,
+b.name_last,
+b.street_addr_1,
+b.street_addr_2,
+b.city,
+b.state,
+b.zip,
+b.email_address,
+b.second_email_address,
+b.company_name,
+f.ticket_type_price_level
+FROM msgbiadb.ads_main.f_ticket_sales_event_seat a
+ join ads_main.d_customer_account b
+on a.customer_account_id=b.customer_account_id
+join ads_main.d_event_plan c
+on a.event_plan_id=c.event_plan_id 
+join ads_main.d_ticket_type_flags d
+on a.ticket_type_flag_id=d.ticket_type_flag_id
+join ads_main.d_manifest_seat e
+on a.manifest_seat_id=e.manifest_seat_id
+left join ads_main.d_price_code f
+on a.price_code_id=f.price_code_id
+where 1=1
+--and c.tm_event_date between cast('09/21/2017' as timestamp) and cast('09/23/2017' as timestamp)
+and d.ticket_comp_code = 0
+and c.tm_season_name like '%2017-18 New York Knick%'
+and tm_database = 'KNICKS'
+--and c.tm_event_name = 'ESG0922E'
+--and c.tm_event_name_long = 'RADIO CITY CHRISTMAS SPECTACULAR'
+and f.ticket_type_price_level in ('Renewals', 'Half Plan', 'New Full')
+--and e.tm_season_name like '2016 RCCS%'
+--and ticket_group_flag = 'N'
+--and b.city = 'New York'
+GROUP BY 
+b.tm_acct_id,
+b.customer_master_index,
+b.name_first,
+b.name_mi,
+b.name_last,
+b.street_addr_1,
+b.street_addr_2,
+b.city,
+b.state,
+b.zip,
+b.email_address,
+b.second_email_address,
+b.company_name,
+f.ticket_type_price_level
+)
+SELECT DISTINCT(tm_acct_id),
+tickets_sold,
+tickets_total_net_revenue,
+customer_master_index,
+name_first,
+name_mi,
+name_last,
+street_addr_1,
+street_addr_2,
+city,
+state,
+zip,
+email_address,
+second_email_address,
+company_name,
+ticket_type_price_level
+FROM STMS1
+WHERE tickets_sold > 0
