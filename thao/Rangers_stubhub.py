@@ -50,7 +50,7 @@ for id in id_df['id']:
     eventid = '%s'%id
     listing_df=pd.DataFrame()
 
-    for i in np.arange(0,2,1):
+    for i in np.arange(0,4,1):
         data = {'eventid':eventid,'start':250*i,'rows':250}
         inventory = requests.get(inventory_url, headers=headers, params=data)
         inv = inventory.json()
