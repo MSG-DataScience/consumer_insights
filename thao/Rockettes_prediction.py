@@ -254,19 +254,32 @@ out2 AS
 select * from out1 LEFT JOIN out2 USING (tm_event_date)
 order by full_date desc
 '''
+
 group= pd.read_sql(group_query, engine)
 data= pd.read_sql(renewals_query, engine)
 camp= pd.read_sql(camp_query, engine)
 data=data[pd.notnull(data['full_date'])]
 group=group[pd.notnull(group['full_date'])]
+
 data['full_date'] = data['full_date'].astype(str)
 data["promo"]=data["full_date"].map(lambda x: 1 if x =='2016-06-20' else 1 if x =='2016-08-02' else 1 if x =='2016-08-10' else 1 if x =='2016-08-17' else 1 if x =='2016-09-01' else 1 if x =='2016-09-25' else 1 if x =='2016-09-26' else 1 if x =='2016-09-27' else 1 if x =='2016-09-28' else 1 if x =='2016-09-29' else 1 if x =='2016-09-30' else 1 if x =='2016-10-01' else 1 if x =='2016-10-02' else 1 if x =='2016-10-03' else 1 if x =='2016-10-04' else 1 if x =='2016-10-05' else 1 if x =='2016-10-06' else 1 if x =='2016-10-07' else 1 if x =='2016-10-08' else 0 )
 data["presale"]=data["full_date"].map(lambda x: 1 if x =='2016-06-20' else 1 if x =='2016-08-02' else 1 if x =='2016-08-10' else 1 if x =='2016-08-17' else 0 )
-
+traffic=pd.read_csv('C:/Users/haoti/Downloads/traffic.csv')
+social=pd.read_csv('C:/Users/haoti/Downloads/social.csv')
+traffic=traffic.rename(columns={'Date':'full_date'})
+social=social.rename(columns={'Date':'full_date'})  
+social=social.rename(columns={'Facebook Page Impressions':'Facebook'})
+traffic=traffic.rename(columns={'Selected Period':'traffic'})
+data = data[data.full_date!= '11/20/2015']
 data['full_date'] = pd.to_datetime(data['full_date'])
+traffic['full_date'] = pd.to_datetime(traffic['full_date'])
+social['full_date'] = pd.to_datetime(social['full_date'])
 group['full_date'] = pd.to_datetime(group['full_date'])
 camp['full_date'] = pd.to_datetime(camp['full_date'])
 data= pd.merge(data,camp,how='left',on=['full_date'])
+data= pd.merge(data,social,how='left',on=['full_date'])
+data= pd.merge(data,traffic,how='left',on=['full_date'])
+
 data = data[data.full_date!= '11/20/2015']
 data = data[data.full_date!= '7/13/2017']
 data = data[data.full_date!= '7/12/2017']
@@ -283,6 +296,13 @@ group.tm_event_day.replace(('MON','TUE','WED','THU','FRI','SAT','SUN'),(0,1,2,3,
 data['tm_event_time']=data['tm_event_time'].apply(lambda x:str(x)[0:2])
 data['tm_event_date'] = pd.to_datetime(data['tm_event_date'])
 group['tm_event_date'] = pd.to_datetime(group['tm_event_date'])
+
+
+data['Facebook']=data['Facebook'].str.replace(',','')
+data['Twitter']=data['Twitter'].str.replace(',','')
+data=data.fillna(0)
+data['Facebook']=data['Facebook'].astype(int)
+data['Twitter']=data['Twitter'].astype(int)
 
 data['daysleft']=data['tm_event_date']-data['full_date']
 data['daysleft']=data['daysleft'].apply(lambda x:str(x).split(None, 1))
@@ -325,12 +345,7 @@ data['tm_event_time']=data['tm_event_time'].apply(lambda x:int(x))
 
 data['priorweek']=data['count']
 data['weeksent']=data['count']
-data['weekdelivered']=data['count']
-data['weekclick']=data['count']
-data['weekunsub']=data['count']
-data['weekop']=data['count']
-
-    
+ 
 data=data.fillna(0)
 '''
 for i in np.arange(0,len(data),1):
@@ -344,15 +359,13 @@ for i in np.arange(0,len(data),1):
    else:
        data['weeksent'][i]=0
 '''
-
-
 data4=data.iloc[::2, :].reset_index(drop=True)
 data5=data.iloc[1::2, :].reset_index(drop=True)
-train_X = data4[['presale','promo','avg','cumsum','tm_event_time','tm_event_name', 'tm_event_day','day_of_week', 'event_day_of_week','day_in_month','event_day_in_month','week_id', 'event_week_id','day_in_year','event_day_in_year','calendar_year','event_calendar_year','month_number_in_year','event_month_number_in_year','daysleft','christmas']]
+train_X = data4[['traffic','Twitter','Facebook','presale','promo','avg','cumsum','tm_event_time','tm_event_name', 'tm_event_day','day_of_week', 'event_day_of_week','day_in_month','event_day_in_month','week_id', 'event_week_id','day_in_year','event_day_in_year','calendar_year','event_calendar_year','month_number_in_year','event_month_number_in_year','daysleft','christmas']]
 
 train_y = data4.number
 
-test_X = data5[['presale','promo','avg','cumsum','tm_event_time','tm_event_name', 'tm_event_day','day_of_week', 'event_day_of_week','day_in_month','event_day_in_month','week_id', 'event_week_id','day_in_year','event_day_in_year','calendar_year','event_calendar_year','month_number_in_year','event_month_number_in_year','daysleft','christmas']]
+test_X = data5[['traffic','Twitter','Facebook','presale','promo','avg','cumsum','tm_event_time','tm_event_name', 'tm_event_day','day_of_week', 'event_day_of_week','day_in_month','event_day_in_month','week_id', 'event_week_id','day_in_year','event_day_in_year','calendar_year','event_calendar_year','month_number_in_year','event_month_number_in_year','daysleft','christmas']]
 test_y = data5.number
 
 preds, model = runXGB(train_X, train_y, test_X, num_rounds=1500)
