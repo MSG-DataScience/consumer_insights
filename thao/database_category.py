@@ -7,17 +7,17 @@ Created on Thu Jun 15 13:55:32 2017
 
 import pandas as pd
 import numpy as np
-
+#read all the distinct food beverage and merchandise
 distinct=pd.read_csv("c:/project/fnb label/how many food sold.csv")
 
 
-
+#read all the distinct item for each category
 beer=pd.read_csv("c:/project/fnb label/beer.csv")
 wine=pd.read_csv("c:/project/fnb label/wine.csv",encoding = "ISO-8859-1")
 soda=pd.read_csv("c:/project/fnb label/soda.csv")
 water=pd.read_csv("c:/project/fnb label/water.csv")
 mer=pd.read_csv("c:/project/fnb label/mer.csv")
-
+# parse beverage by ounce
 for i in np.arange(1,100,1):
     distinct['volume'][distinct['product'].str.contains('%d oz' % i,case=False)]='%d oz' % i
     distinct['volume'][distinct['product'].str.contains('%doz' % i,case=False)]='%d oz' % i
@@ -30,7 +30,7 @@ for i in [ '%.1f' % elem for elem in np.arange(1,100,0.1) ]:
 for i in [ '%.2f' % elem for elem in np.arange(1,100,0.01) ]:
         distinct['volume'][distinct['product'].str.contains('%s oz' % i,case=False)]='%s oz' % i
         distinct['volume'][distinct['product'].str.contains('%soz' % i,case=False)]='%s oz' % i
-
+# parse food by pieces
 for i in np.arange(1,100,1):
     distinct['volume'][distinct['product'].str.contains('%d pcs' % i,case=False)]='%d oz' % i
     distinct['volume'][distinct['product'].str.contains('%dpc' % i,case=False)]='%d oz' % i
@@ -38,7 +38,7 @@ for i in np.arange(1,100,1):
 
 
 distinct['volume'][distinct['product'].str.contains('187ML',case=False)]='187 ml'        
-        
+# categorized food beverage and merchandise        
 resultb=distinct['product'].str.contains('|'.join(beer['name']),case=False)
 distinct['category']=np.where(resultb==True,'beer','other')
 
@@ -96,7 +96,7 @@ distinct['category'][distinct['product'].str.contains('hood',case=False)]='hoodi
 distinct['category'][distinct['product'].str.contains('headband',case=False)]='headband'
 distinct['category'][distinct['product'].str.contains('wristband',case=False)]='wristband'
 distinct['category'][distinct['product'].str.contains('book',case=False)]='yearbook'
-
+# parse merchandise by size
 distinct['volume'][distinct['product'].str.contains(' s ',case=False)]='s'
 distinct['volume'][distinct['product'].str.contains(' m ',case=False)]='m'
 distinct['volume'][distinct['product'].str.contains(' l ',case=False)]='l'
