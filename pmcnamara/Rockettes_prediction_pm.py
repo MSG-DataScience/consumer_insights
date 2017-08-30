@@ -51,11 +51,11 @@ AND tm_acct_id NOT IN ('-1','-2');
 data = pd.read_sql(tickets_query, engine)
 
 # CLEAN SALES DATA #
+data = data[(data['sale_date'] == data['tickets_add_datetime']) & (data['tickets_sold'] > 0) & (data['cust_sum'] > 0)]
 data['event_date'] = data['event_date'].dt.date
 data['sale_date'] = data['tickets_add_datetime'].dt.date
 data['sale_time'] = data['tickets_add_datetime'].dt.time
 data['event_time'] = pd.to_datetime(data['event_time'], format='%H:%M:%S').dt.time
-data = data[(data['sale_date'] == data['tickets_add_datetime']) & (data['tickets_sold'] > 0) & (data['cust_sum'] > 0)]
 data = data[data['sale_date'] <= data['event_date'].max()]
 data.drop(['nbr_bought','cust_sum','tickets_total_gross_revenue','tickets_total_revenue'], axis = 1, inplace = True)
 
