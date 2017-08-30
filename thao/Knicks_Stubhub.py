@@ -10,7 +10,7 @@ import numpy as np
 import datetime
 import os
 
-
+#connect to stubhub API
 engine = sqlalchemy.create_engine("mysql+mysqldb://Rangers:19931104@rangers.cbtjzutpd1ig.us-east-2.rds.amazonaws.com:3306/Rangers")
 
 app_token = "a7e64ebe-0998-3dcd-afa8-88b5594440c9"
@@ -35,22 +35,23 @@ access_token = token_respoonse['access_token']
 user_GUID = r.headers['X-StubHub-User-GUID']
 inventory_url = 'https://api.stubhub.com/search/inventory/v2'
 
+
 headers['Authorization'] = 'Bearer ' + access_token
 headers['Accept'] = 'application/json'
 headers['Accept-Encoding'] = 'application/json'
-
+#search for all Knicks games' id
 id_df=pd.DataFrame()
 search_url = 'https://api.stubhub.com/search/catalog/events/v3?name=knicks&parking=false&city=New York&rows=100&status=active'
 search = requests.get(search_url, headers=headers)
 search_dict= search.json()
 id_df=id_df.append(pd.DataFrame(search_dict['events']))
 
-
+#get tickets information from each game
 for id in id_df['id']:    
     eventid = '%s'%id
     listing_df=pd.DataFrame()
 
-    for i in np.arange(0,2,1):
+    for i in np.arange(0,4,1):
         data = {'eventid':eventid,'start':250*i,'rows':250}
         inventory = requests.get(inventory_url, headers=headers, params=data)
         inv = inventory.json()
@@ -76,6 +77,7 @@ for id in id_df['id']:
                        'listingAttributeList','sectionId','sellerOwnInd','sellerSectionName','splitOption','splitVector','ticketSplit','zoneId','zoneName']
     else:
         my_col = ['isGA','deliveryMethodList', 'deliveryTypeList', 'dirtyTicketInd', 'score',
-                       'listingAttributeList','sectionId','sellerOwnInd','sellerSectionName','splitOption','splitVector','ticketSplit','zoneId','zoneName']        
+                       'listingAttributeList','sectionId','sellerOwnInd','sellerSectionName','splitOption','splitVector','ticketSplit','zoneId','zoneName']  
     result=listing_df.drop(my_col,axis=1)
+# store data into the cloud database
     result.to_sql(name='Knicks', con=engine, if_exists = 'append', index=False)
