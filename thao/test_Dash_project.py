@@ -12,6 +12,7 @@ app = dash.Dash()
 
 app.layout = html.Div([
     dcc.Graph(id='graph-with-slider', animate=True),
+    dcc.DatePickerSingle(id='my-asd', initial_visible_month=dt(2017, 10, 1),date=dt(2017, 10, 1)),
    dcc.Dropdown(id='my-id', options=[
         {'label': 'none', 'value': 0},
         {'label': '9/17/2017', 'value': 260},
