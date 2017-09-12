@@ -3,24 +3,8 @@ import dash_core_components as dcc
 import dash_html_components as html
 import plotly.graph_objs as go
 import pandas as pd
-import dash
-import dash_core_components as dcc
-import dash_html_components as html
-import plotly.graph_objs as go
-import pandas as pd
-import xgboost as xgb
-import time
-import requests
-import base64
-import json
-import pprint
-import pandas as pd
-import numpy as np
-import datetime
-from sklearn import preprocessing
-import sqlalchemy
-from sklearn.metrics import r2_score
-
+from sklearn.externals import joblib
+from datetime import datetime as dt
 
 app = dash.Dash()
 
@@ -28,69 +12,98 @@ app = dash.Dash()
 
 app.layout = html.Div([
     dcc.Graph(id='graph-with-slider', animate=True),
-    dcc.RadioItems(id='my-id', options=[
-        {'label': '301', 'value': 301},
-        {'label': '302', 'value': 302},
-        {'label': '303', 'value': 303},
-        {'label': '304', 'value': 304},
-        {'label': '305', 'value': 305},
-        {'label': '306', 'value': 306},
-        {'label': '307', 'value': 307},
-        {'label': '308', 'value': 308},
-        {'label': '309', 'value': 309},
-        {'label': '310', 'value':310},
-        
+   dcc.Dropdown(id='my-id', options=[
+        {'label': 'none', 'value': 0},
+        {'label': '9/17/2017', 'value': 260},
+        {'label': '9/27/2017', 'value': 270},
+        {'label': '10/7/2017', 'value': 280},
+        {'label': '10/17/2017', 'value': 290},
+        {'label': '10/27/2017', 'value': 300},
+        {'label': '11/6/2017', 'value': 310},
+        {'label': '11/16/2017', 'value': 320},
+        {'label': '11/26/2017', 'value': 330},
+        {'label': '12/6/2017', 'value':340},
     ],
-    value=301),
-    dcc.RadioItems(id='my-ii', options=[
-        {'label': '1', 'value': 1},
-        {'label': '2', 'value': 2},
-        {'label': '3', 'value': 3},
-        {'label': '4', 'value': 4},
-        {'label': '5', 'value': 5},
-        {'label': '6', 'value': 6},
-        {'label': '7', 'value': 7},
-        {'label': '8', 'value': 8},
-        {'label': '9', 'value': 9},
-        {'label': '10', 'value':10},
-        
+    value=300),
+      dcc.Dropdown(id='my-ii', options=[
+        {'label': 'none', 'value': 0},
+        {'label': '9/17/2017', 'value': 260},
+        {'label': '9/27/2017', 'value': 270},
+        {'label': '10/7/2017', 'value': 280},
+        {'label': '10/17/2017', 'value': 290},
+        {'label': '10/27/2017', 'value': 300},
+        {'label': '11/6/2017', 'value': 310},
+        {'label': '11/16/2017', 'value': 320},
+        {'label': '11/26/2017', 'value': 330},
+        {'label': '12/6/2017', 'value':340},
     ],
-    value=3)    
-    
+    value=300),
+    dcc.Dropdown(id='my-dd', options=[
+        {'label': 'none', 'value': 0},
+        {'label': '9/17/2017', 'value': 260},
+        {'label': '9/27/2017', 'value': 270},
+        {'label': '10/7/2017', 'value': 280},
+        {'label': '10/17/2017', 'value': 290},
+        {'label': '10/27/2017', 'value': 300},
+        {'label': '11/6/2017', 'value': 310},
+        {'label': '11/16/2017', 'value': 320},
+        {'label': '11/26/2017', 'value': 330},
+        {'label': '12/6/2017', 'value':340},
+    ],
+    value=300),
+    html.Div(id='display-selected-values')
     
 ])
 @app.callback(
     dash.dependencies.Output('graph-with-slider', 'figure'),
     [dash.dependencies.Input('my-id', 'value'),
-     dash.dependencies.Input('my-ii', 'value')])
+     dash.dependencies.Input('my-ii', 'value'),
+     dash.dependencies.Input('my-dd', 'value')])
 
 
     
-def update_figure(selected_days,ratio):
-    
-    data6=pd.read_csv('c:/project/data7.csv')
-    data7=pd.read_csv('c:/project/data7.csv')
-    data7['preds'][data7.days > selected_days] += 2000*ratio
-    trace0=go.Scatter(
-                    x=data7.days,
-                    y=data7.preds,
-                    
-                )
-    trace1=go.Scatter(
-                    x=data6.days,
-                    y=data6.preds,
-                    
-                )
+def update_figure(selected_days,ratio,lala):
+    test_x=pd.read_csv("c:/Users/haot/test_x.csv")
+    clf=joblib.load('c:/Users/haot/a.pkl')
+    day=pd.read_csv("c:/Users/haot/test_date.csv")
+    test_x['Facebook'][test_x.yearday == selected_days] += 100000
+    test_x['Twitter'][test_x.yearday == ratio] += 100000
+    test_x['promo'][test_x.yearday == lala] = 1
+    test_y=clf.predict(test_x)
+
     return{
-            'data': [trace0,trace1],
+            'data': [
+                    go.Scatter(
+                    x=day.date,
+                    y=test_y,
+                    
+                )],
             'layout': go.Layout(
+                
                 xaxis={'title': 'days'},
                 yaxis={'title': 'preds'},
-                margin={'l': 40, 'b': 40, 't': 10, 'r': 10},
+                margin={'l': 100, 'b': 100, 't': 100, 'r': 100},
                 legend={'x': 0, 'y': 1},
                 hovermode='closest'
             )
         }
+        
+@app.callback(
+    dash.dependencies.Output('display-selected-values', 'children'),
+    [dash.dependencies.Input('my-id', 'value'),
+     dash.dependencies.Input('my-ii', 'value'),
+     dash.dependencies.Input('my-dd', 'value')])
+        
+def update_figure(selected_days,ratio,lala):
+    test_x=pd.read_csv("c:/Users/haot/test_x.csv")
+    clf=joblib.load('c:/Users/haot/a.pkl')
+    
+    test_x['Facebook'][test_x.yearday == selected_days] += 100000
+    test_x['Twitter'][test_x.yearday == ratio] += 100000
+    test_x['promo'][test_x.yearday == lala] = 1
+    test_y=clf.predict(test_x)
+    c=sum(test_y)
 
+    return u'{}'.format(round(c))
 if __name__ == '__main__':
     app.run_server()  
