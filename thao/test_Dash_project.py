@@ -4,7 +4,7 @@ import dash_html_components as html
 import plotly.graph_objs as go
 import pandas as pd
 from sklearn.externals import joblib
-from datetime import datetime as dt
+
 
 app = dash.Dash()
 
