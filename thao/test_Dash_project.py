@@ -12,6 +12,7 @@ app = dash.Dash()
 
 app.layout = html.Div([
     dcc.Graph(id='graph-with-slider', animate=True),
+    html.Label('Facebook'),
    dcc.Dropdown(id='my-id', options=[
         {'label': 'none', 'value': 0},
         {'label': '9/17/2017', 'value': 260},
@@ -25,6 +26,7 @@ app.layout = html.Div([
         {'label': '12/6/2017', 'value':340},
     ],
     value=300),
+           html.Label('Twitter'),
       dcc.Dropdown(id='my-ii', options=[
         {'label': 'none', 'value': 0},
         {'label': '9/17/2017', 'value': 260},
@@ -38,6 +40,7 @@ app.layout = html.Div([
         {'label': '12/6/2017', 'value':340},
     ],
     value=300),
+              html.Label('Promo'),
     dcc.Dropdown(id='my-dd', options=[
         {'label': 'none', 'value': 0},
         {'label': '9/17/2017', 'value': 260},
@@ -51,6 +54,7 @@ app.layout = html.Div([
         {'label': '12/6/2017', 'value':340},
     ],
     value=300),
+            html.Label('Total'),
     html.Div(id='display-selected-values')
     
 ])
@@ -64,10 +68,10 @@ app.layout = html.Div([
     
 def update_figure(selected_days,ratio,lala):
     test_x=pd.read_csv("c:/Users/haot/test_x.csv")
-    clf=joblib.load('c:/Users/haot/a.pkl')
+    clf=joblib.load('c:/Users/haot/x.pkl')
     day=pd.read_csv("c:/Users/haot/test_date.csv")
-    test_x['Facebook'][test_x.yearday == selected_days] += 100000
-    test_x['Twitter'][test_x.yearday == ratio] += 100000
+    test_x['Facebook'][test_x.yearday > selected_days] += 100000
+    test_x['Twitter'][test_x.yearday > ratio] += 100000
     test_x['promo'][test_x.yearday == lala] = 1
     test_y=clf.predict(test_x)
 
@@ -87,7 +91,7 @@ def update_figure(selected_days,ratio,lala):
                 hovermode='closest'
             )
         }
-        
+       
 @app.callback(
     dash.dependencies.Output('display-selected-values', 'children'),
     [dash.dependencies.Input('my-id', 'value'),
@@ -96,14 +100,15 @@ def update_figure(selected_days,ratio,lala):
         
 def update_figure(selected_days,ratio,lala):
     test_x=pd.read_csv("c:/Users/haot/test_x.csv")
-    clf=joblib.load('c:/Users/haot/a.pkl')
+    clf=joblib.load('c:/Users/haot/x.pkl')
     
-    test_x['Facebook'][test_x.yearday == selected_days] += 100000
-    test_x['Twitter'][test_x.yearday == ratio] += 100000
+    test_x['Facebook'][test_x.yearday  >  selected_days] += 1000000
+    test_x['Twitter'][test_x.yearday > ratio] += 100000
     test_x['promo'][test_x.yearday == lala] = 1
     test_y=clf.predict(test_x)
     c=sum(test_y)
 
     return u'{}'.format(round(c))
+
 if __name__ == '__main__':
-    app.run_server()  
+    app.run_server() 

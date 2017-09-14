@@ -5,7 +5,8 @@ import numpy as np
 import datetime
 import matplotlib.pylab as plt
 import sqlalchemy
-import xgboost as xgb
+#import xgboost as xgb
+from sklearn.externals import joblib
 def runXGB(train_X, train_y, test_X, feature_names=None, num_rounds=5000):
     param = {}
     param['objective'] = "reg:linear"
@@ -241,9 +242,9 @@ onsaley_dates = pd.to_datetime([ '2015-05-20','2016-08-24', '2017-08-18']).date
 data['onsaley']=[1 if data['date'][i] in onsaley_dates else 0 for i in data.index]
 '''
 #social,traffic,weather 
-traffic=pd.read_csv('c:/project/rockettes_visitors.csv').drop(['Row Number'], axis = 1)
-social=pd.read_csv('c:/project/rockettes_social.csv')
-weather=pd.read_csv('c:/project/rockettes_weather.csv')
+traffic=pd.read_csv('/Users/mcnamarp/Documents/consumer_insights/thao/rockettes_visitors.csv').drop(['Row Number'], axis = 1)
+social=pd.read_csv('/Users/mcnamarp/Documents/consumer_insights/thao/rockettes_social.csv')
+weather=pd.read_csv('/Users/mcnamarp/Documents/consumer_insights/thao/rockettes_weather.csv')
 social=social.rename(columns={'Twitter Organic Impressions':'Twitter','Facebook Page Impressions':'Facebook'})
 #camp['full_date']=pd.to_datetime(camp['full_date']).dt.date
 traffic['Date'] = pd.to_datetime(traffic['Date']).dt.date
@@ -334,3 +335,5 @@ print(result['ape'].mean())
 print(result['aape'].mean())
 print((sum(b)-sum(test_y))/sum(test_y))
 '''
+joblib.dump(a,'e.pkl')
+#joblib.dump(e.pkl, '/Users/mcnamarp/Documents/consumer_insights/thao/')
