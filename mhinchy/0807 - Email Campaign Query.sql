@@ -50,6 +50,7 @@ when upper(sj.exctgt_from_name) SIMILAR  to upper('%Chicago%' ) then 'Live - Chi
 when upper(sj.exctgt_email_name) SIMILAR  to upper('%Chase Chicago%' ) then 'Live - Chicago'
 when upper(sj.exctgt_email_name) SIMILAR TO upper('% MSG %' ) then 'Live - New York'
 when upper(sj.exctgt_business_unit_name) SIMILAR  to upper('%Festival%') then 'Live - New York'
+when upper(sj.exctgt_business_unit_name) SIMILAR  to upper('%Prudential%') then 'Live - New York'
 else 'Unmapped'
 end as Brand,
 case 
