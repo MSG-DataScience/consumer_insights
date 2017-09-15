@@ -54,6 +54,20 @@ app.layout = html.Div([
         {'label': '12/6/2017', 'value':340},
     ],
     value=300),
+                          html.Label('Email'),
+    dcc.Dropdown(id='my-asd', options=[
+        {'label': 'none', 'value': 0},
+        {'label': '9/17/2017', 'value': 260},
+        {'label': '9/27/2017', 'value': 270},
+        {'label': '10/7/2017', 'value': 280},
+        {'label': '10/17/2017', 'value': 290},
+        {'label': '10/27/2017', 'value': 300},
+        {'label': '11/6/2017', 'value': 310},
+        {'label': '11/16/2017', 'value': 320},
+        {'label': '11/26/2017', 'value': 330},
+        {'label': '12/6/2017', 'value':340},
+    ],
+    value=300),
             html.Label('Total'),
     html.Div(id='display-selected-values')
     
@@ -62,17 +76,19 @@ app.layout = html.Div([
     dash.dependencies.Output('graph-with-slider', 'figure'),
     [dash.dependencies.Input('my-id', 'value'),
      dash.dependencies.Input('my-ii', 'value'),
-     dash.dependencies.Input('my-dd', 'value')])
+     dash.dependencies.Input('my-dd', 'value'),
+     dash.dependencies.Input('my-asd', 'value')])
 
 
     
-def update_figure(selected_days,ratio,lala):
-    test_x=pd.read_csv("c:/Users/haot/test_x.csv")
-    clf=joblib.load('c:/Users/haot/x.pkl')
+def update_figure(selected_days,ratio,lala,email):
+    test_x=pd.read_csv("c:/Users/haot/test_xe.csv")
+    clf=joblib.load('c:/Users/haot/xe.pkl')
     day=pd.read_csv("c:/Users/haot/test_date.csv")
     test_x['Facebook'][test_x.yearday > selected_days] += 100000
     test_x['Twitter'][test_x.yearday > ratio] += 100000
     test_x['promo'][test_x.yearday == lala] = 1
+    test_x['sent'][test_x.yearday > email] = 1000000
     test_y=clf.predict(test_x)
 
     return{
@@ -96,15 +112,17 @@ def update_figure(selected_days,ratio,lala):
     dash.dependencies.Output('display-selected-values', 'children'),
     [dash.dependencies.Input('my-id', 'value'),
      dash.dependencies.Input('my-ii', 'value'),
-     dash.dependencies.Input('my-dd', 'value')])
+     dash.dependencies.Input('my-dd', 'value'),
+     dash.dependencies.Input('my-asd', 'value')])
         
-def update_figure(selected_days,ratio,lala):
-    test_x=pd.read_csv("c:/Users/haot/test_x.csv")
-    clf=joblib.load('c:/Users/haot/x.pkl')
+def update_figure(selected_days,ratio,lala,email):
+    test_x=pd.read_csv("c:/Users/haot/test_xe.csv")
+    clf=joblib.load('c:/Users/haot/xe.pkl')
     
     test_x['Facebook'][test_x.yearday  >  selected_days] += 1000000
     test_x['Twitter'][test_x.yearday > ratio] += 100000
     test_x['promo'][test_x.yearday == lala] = 1
+    test_x['sent'][test_x.yearday > email] = 1000000
     test_y=clf.predict(test_x)
     c=sum(test_y)
 

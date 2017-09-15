@@ -257,7 +257,7 @@ order by full_date desc
 
 group= pd.read_sql(group_query, engine)
 data= pd.read_sql(renewals_query, engine)
-camp= pd.read_sql(camp_query, engine)
+#camp= pd.read_sql(camp_query, engine)
 data=data[pd.notnull(data['full_date'])]
 group=group[pd.notnull(group['full_date'])]
 
@@ -275,8 +275,8 @@ data['full_date'] = pd.to_datetime(data['full_date'])
 traffic['full_date'] = pd.to_datetime(traffic['full_date'])
 social['full_date'] = pd.to_datetime(social['full_date'])
 group['full_date'] = pd.to_datetime(group['full_date'])
-camp['full_date'] = pd.to_datetime(camp['full_date'])
-data= pd.merge(data,camp,how='left',on=['full_date'])
+#camp['full_date'] = pd.to_datetime(camp['full_date'])
+#data= pd.merge(data,camp,how='left',on=['full_date'])
 data= pd.merge(data,social,how='left',on=['full_date'])
 data= pd.merge(data,traffic,how='left',on=['full_date'])
 
