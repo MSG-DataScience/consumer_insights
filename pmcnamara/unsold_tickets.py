@@ -46,7 +46,8 @@ from ads_main.t_ticket_sales_event_seat
 where 1=1
 and tm_season_name IN (
 '2015-16 New York Knicks',
-'2016-17 New York Knicks')
+'2016-17 New York Knicks'
+'2017-18 New York Knicks')
 --and ticket_type_price_level IN (/*'Half Plan'*/'New Fulls', 'Individuals' ) 
 --and tm_event_name='ENK0412E'
 --and tm_section_name = 1
