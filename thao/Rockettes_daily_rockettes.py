@@ -1,31 +1,35 @@
 from sklearn.ensemble import RandomForestRegressor
-
 import pandas as pd
 import numpy as np
 import datetime
-<<<<<<< HEAD
-=======
+import sqlalchemy
 import matplotlib.pylab as plt
 import sqlalchemy
-#import xgboost as xgb
+import xgboost as xgb
 from sklearn.externals import joblib
+
 def runXGB(train_X, train_y, test_X, feature_names=None, num_rounds=5000):
     param = {}
     param['objective'] = "reg:linear"
     param['booster']="gbtree"
-    param['eta'] = 0.04
-    param['max_depth'] = 9
-    param['colsample_bytree'] = 0.4
+    param['eta'] = 0.03
+    param['max_depth'] = 3
+    param['colsample_bytree'] = 0.6
     param['silent'] = 1
     param['subsample'] = 0.8
+    param['min_child_weight']=5
     param['colsample_bytree'] = 0.7
     param['eval_metric']="mae"
 
     plst = list(param.items())
     xgtrain = xgb.DMatrix(train_X, label=train_y)
->>>>>>> 0c9d4d58a5cfa254b093e71c93a6ca591d35c6c9
 
-import sqlalchemy
+
+    xgtest = xgb.DMatrix(test_X)
+    model = xgb.train(plst, xgtrain, num_rounds)
+
+    pred_test_y = model.predict(xgtest)
+    return pred_test_y, model
 
 
 engine = sqlalchemy.create_engine("redshift+psycopg2://haot:Welcome9582!@rsmsgbia.c5dyht7ygr3w.us-east-1.redshift.amazonaws.com:5476/msgbiadb")
@@ -228,6 +232,7 @@ promo_dates = pd.to_datetime(['2016-06-20', '2016-08-02', '2016-08-10', '2016-08
 data['promo']=[1 if data['date'][i] in promo_dates else 0 for i in data.index]
 sale_dates = pd.to_datetime(['2016-06-20', '2016-08-02', '2016-08-10', '2016-08-17']).date
 data['sale']=[1 if data['date'][i] in sale_dates else 0 for i in data.index]
+data['count'][460]=3243-2808
 '''
 promoy_dates = pd.to_datetime(['2016-06-21', '2016-08-03', '2016-08-11', '2016-08-18', '2016-09-02', '2016-09-26', '2016-09-27', '2016-09-28', '2016-09-29', '2016-09-30', '2016-10-01', '2016-10-02', '2016-10-03', '2016-10-04', '2016-10-05', '2016-10-06', '2016-10-07', '2016-10-08', '2016-10-09']).date
 data['promoy']=[1 if data['date'][i] in promoy_dates else 0 for i in data.index]
@@ -241,9 +246,10 @@ onsaley_dates = pd.to_datetime([ '2015-05-20','2016-08-24', '2017-08-18']).date
 data['onsaley']=[1 if data['date'][i] in onsaley_dates else 0 for i in data.index]
 '''
 #social,traffic,weather 
-traffic=pd.read_csv('/Users/mcnamarp/Documents/consumer_insights/thao/rockettes_visitors.csv').drop(['Row Number'], axis = 1)
-social=pd.read_csv('/Users/mcnamarp/Documents/consumer_insights/thao/rockettes_social.csv')
-weather=pd.read_csv('/Users/mcnamarp/Documents/consumer_insights/thao/rockettes_weather.csv')
+traffic=pd.read_csv('C:/Users/haot/Documents/GitHub/consumer_insights/thao/rockettes_visitors.csv').drop(['Row Number'], axis = 1)
+
+social=pd.read_csv('C:/Users/haot/Documents/GitHub/consumer_insights/thao/rockettes_social.csv')
+weather=pd.read_csv('C:/Users/haot/Documents/GitHub/consumer_insights/thao/rockettes_weather.csv')
 social=social.rename(columns={'Twitter Organic Impressions':'Twitter','Facebook Page Impressions':'Facebook'})
 camp['full_date']=pd.to_datetime(camp['full_date']).dt.date
 traffic['Date'] = pd.to_datetime(traffic['Date']).dt.date
@@ -310,19 +316,19 @@ data['month']=data['date'].apply(lambda x:x.month)
 data=data.drop(['Brand','Date','DATE','tm_event_date','date','full_date'],axis=1)
 #fit model
 
-train_x=data[:848].drop(['count'],axis=1)
-train_y=data[:848]['count']
-regr = RandomForestRegressor(n_estimators= 500, n_jobs = -1)
-a=regr.fit(train_x, train_y)
+train_x=data[:800].drop(['count'],axis=1)
+train_y=data[:800]['count']
+#regr = RandomForestRegressor(n_estimators= 500, n_jobs = -1)
+#a=regr.fit(train_x, train_y)
 
-test_x=data[849:].drop(['count'],axis=1)
-b=a.predict(test_x)
-#preds, model = runXGB(train_x, train_y, test_x, num_rounds=1500)
+test_x=data[800:849].drop(['count'],axis=1)
+#b=a.predict(test_x)
+preds, model = runXGB(train_x, train_y, test_x, num_rounds=1500)
 
-data5=data[849:].reset_index(drop=True)
+data5=data[800:849].reset_index(drop=True)
 test_y=data5['count']
 result=pd.DataFrame()
-result['predict']=b
+result['predict']=preds
 result['real']=test_y
 
 result['error']=result['predict']-result['real']
@@ -332,10 +338,8 @@ result['ape']=result['error']/result['real']
 result['aape']=result['aerror']/result['real']
 print(result['ape'].mean())
 print(result['aape'].mean())
-print((sum(b)-sum(test_y))/sum(test_y))
-<<<<<<< HEAD
-=======
-'''
-joblib.dump(a,'e.pkl')
+print((sum(preds)-sum(test_y))/sum(test_y))
+
+
+#joblib.dump(a,'e.pkl')
 #joblib.dump(e.pkl, '/Users/mcnamarp/Documents/consumer_insights/thao/')
->>>>>>> 0c9d4d58a5cfa254b093e71c93a6ca591d35c6c9
