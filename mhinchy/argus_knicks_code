@@ -1,0 +1,30 @@
+select 
+distinct(ads_main.f_sha256(email_address)) as hashed_email 
+from
+(
+select
+tm_order_id, 
+tickets_add_datetime as tm_sale_date,
+tm_event_date, 
+tm_season_name, 
+tickets_sold, 
+tickets_total_revenue,
+upper(email_address) as email_address, 
+zip, 
+tm_acct_id, 
+ticket_sell_location_name, 
+tm_event_name, 
+tm_section_name, 
+tm_row_name, 
+tm_seat_num, 
+tm_price_code_desc, 
+tm_price_code_group, 
+ticket_type_price_level,
+tm_comp_name,
+ticket_status_desc
+from ads_main.t_ticket_sales_event_seat
+WHERE upper(tm_season_name) IN ('2015-16 NEW YORK KNICKS','2016-17 NEW YORK KNICKS')
+and email_address is not null
+order by email_address, tickets_add_datetime
+) as sales
+where email_address is not null
