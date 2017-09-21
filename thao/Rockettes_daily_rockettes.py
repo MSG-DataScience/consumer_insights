@@ -239,12 +239,15 @@ data['promoy']=[1 if data['date'][i] in promoy_dates else 0 for i in data.index]
 saley_dates = pd.to_datetime(['2016-06-21', '2016-08-03', '2016-08-11', '2016-08-18']).date
 data['saley']=[1 if data['date'][i] in saley_dates else 0 for i in data.index]
 
-onsale_dates = pd.to_datetime(['2015-05-19', '2016-08-23', '2017-08-17']).date
-data['onsale']=[1 if data['date'][i] in onsale_dates else 0 for i in data.index]
+
 
 onsaley_dates = pd.to_datetime([ '2015-05-20','2016-08-24', '2017-08-18']).date
 data['onsaley']=[1 if data['date'][i] in onsaley_dates else 0 for i in data.index]
 '''
+
+onsale_dates = pd.to_datetime(['2015-05-19', '2016-08-23', '2017-08-17']).date
+data['onsale']=[1 if data['date'][i] in onsale_dates else 0 for i in data.index]
+
 #social,traffic,weather 
 traffic=pd.read_csv('C:/Users/haot/Documents/GitHub/consumer_insights/thao/rockettes_visitors.csv').drop(['Row Number'], axis = 1)
 
@@ -285,15 +288,21 @@ second=second.drop(['count'],axis=1)
 third=third.drop(['count'],axis=1)
 
 data['christmas']=data['date'].apply(lambda x: (x-datetime.date(2015,12,25)).days)
+#data['onsaleleft']=data['date'].apply(lambda x: (x-datetime.date(2015,5,19)).days)
 data1=data[data.christmas<10]
 data1 = pd.merge(data1, first, how ='left', left_on = ['date'], right_on = ['tm_event_date'])
+
 data['christmas']=data['date'].apply(lambda x: (x-datetime.date(2016,12,25)).days)
+#data['onsaleleft']=data['date'].apply(lambda x: (x-datetime.date(2016,8,23)).days)
 data2=data[data.christmas>-357]
 data2=data2[data.christmas<9]
 data2 = pd.merge(data2, second, how ='left', left_on = ['date'], right_on = ['tm_event_date'])
+
 data['christmas']=data['date'].apply(lambda x: (x-datetime.date(2017,12,25)).days)
+#data['onsaleleft']=data['date'].apply(lambda x: (x-datetime.date(2017,8,17)).days)
 data3=data[data.christmas>-357]
 data3 = pd.merge(data3, third, how ='left', left_on = ['date'], right_on = ['tm_event_date'])
+
 data=pd.concat([data1,data2,data3]).reset_index(drop=True)
 data = data.fillna(method='bfill')
 
