@@ -39,14 +39,14 @@ with TABLE_1
   AS (
 SELECT tm_acct_id,tm_section_name,tm_row_name,tm_seat_num,tm_event_name,tickets_add_datetime
 FROM msgbiadb.ads_main.t_ticket_sales_event_seat
-where tm_event_name_long = 'RADIO CITY CHRISTMAS SPECTACULAR'  and tm_comp_name='Not Comp' and ticket_group_flag='N' and ticket_type_desc LIKE '%%Individual%%' 
+where  upper(tm_event_name_long) SIMILAR TO upper('%%CHRISTMAS SPECTACULAR%%' )  and tm_comp_name='Not Comp' and ticket_group_flag='N' and ticket_type_desc LIKE '%%Individual%%' 
 GROUP BY tm_acct_id,tm_section_name,tm_row_name,tm_seat_num,tm_event_name,tickets_add_datetime
 having count(*)=1
 ),
   Table_2 AS (
   SELECT *
   FROM msgbiadb.ads_main.t_ticket_sales_event_seat
-  WHERE tm_event_name_long = 'RADIO CITY CHRISTMAS SPECTACULAR' and ticket_group_flag='N' AND tm_comp_name = 'Not Comp' and ticket_type_desc LIKE '%%Individual%%'  
+  WHERE  upper(tm_event_name_long) SIMILAR TO upper('%%CHRISTMAS SPECTACULAR%%' )  and ticket_group_flag='N' AND tm_comp_name = 'Not Comp' and ticket_type_desc LIKE '%%Individual%%'  
 
              ),
 out AS
@@ -210,6 +210,7 @@ data = pd.read_sql(renewals_query, engine)
 
 # CLEAN SALES DATA #
 data=data.groupby('full_date').sum().reset_index()
+
 data=data.dropna()
 data=data.set_index('full_date')
 idx = pd.date_range('05-07-2015', '01-01-2018')
@@ -230,6 +231,7 @@ data['date']=pd.to_datetime(data['date']).dt.date
 
 promo_dates = pd.to_datetime(['2016-06-20', '2016-08-02', '2016-08-10', '2016-08-17', '2016-09-01', '2016-09-25', '2016-09-26', '2016-09-27', '2016-09-28', '2016-09-29', '2016-09-30', '2016-10-01', '2016-10-02', '2016-10-03', '2016-10-04', '2016-10-05', '2016-10-06', '2016-10-07', '2016-10-08']).date
 data['promo']=[1 if data['date'][i] in promo_dates else 0 for i in data.index]
+
 sale_dates = pd.to_datetime(['2016-06-20', '2016-08-02', '2016-08-10', '2016-08-17']).date
 data['sale']=[1 if data['date'][i] in sale_dates else 0 for i in data.index]
 data['count'][460]=3243-2808
@@ -239,17 +241,17 @@ data['promoy']=[1 if data['date'][i] in promoy_dates else 0 for i in data.index]
 saley_dates = pd.to_datetime(['2016-06-21', '2016-08-03', '2016-08-11', '2016-08-18']).date
 data['saley']=[1 if data['date'][i] in saley_dates else 0 for i in data.index]
 
-onsale_dates = pd.to_datetime(['2015-05-19', '2016-08-23', '2017-08-17']).date
-data['onsale']=[1 if data['date'][i] in onsale_dates else 0 for i in data.index]
-
 onsaley_dates = pd.to_datetime([ '2015-05-20','2016-08-24', '2017-08-18']).date
 data['onsaley']=[1 if data['date'][i] in onsaley_dates else 0 for i in data.index]
 '''
-#social,traffic,weather 
-traffic=pd.read_csv('C:/Users/haot/Documents/GitHub/consumer_insights/thao/rockettes_visitors.csv').drop(['Row Number'], axis = 1)
+onsale_dates = pd.to_datetime(['2015-05-19', '2016-08-23', '2017-08-17']).date
+data['onsale']=[1 if data['date'][i] in onsale_dates else 0 for i in data.index]
 
-social=pd.read_csv('C:/Users/haot/Documents/GitHub/consumer_insights/thao/rockettes_social.csv')
-weather=pd.read_csv('C:/Users/haot/Documents/GitHub/consumer_insights/thao/rockettes_weather.csv')
+#social,traffic,weather 
+traffic=pd.read_csv('C:/Users/haoti/OneDrive/Documents/GitHub/consumer_insights/thao/rockettes_visitors.csv').drop(['Row Number'], axis = 1)
+
+social=pd.read_csv('C:/Users/haoti/OneDrive/Documents/GitHub/consumer_insights/thao/rockettes_social.csv')
+weather=pd.read_csv('C:/Users/haoti/OneDrive/Documents/GitHub/consumer_insights/thao/rockettes_weather.csv')
 social=social.rename(columns={'Twitter Organic Impressions':'Twitter','Facebook Page Impressions':'Facebook'})
 camp['full_date']=pd.to_datetime(camp['full_date']).dt.date
 traffic['Date'] = pd.to_datetime(traffic['Date']).dt.date
@@ -316,6 +318,7 @@ data['month']=data['date'].apply(lambda x:x.month)
 data=data.drop(['Brand','Date','DATE','tm_event_date','date','full_date'],axis=1)
 #fit model
 
+#data=data.drop(['date'],axis=1)
 train_x=data[:800].drop(['count'],axis=1)
 train_y=data[:800]['count']
 #regr = RandomForestRegressor(n_estimators= 500, n_jobs = -1)
@@ -339,7 +342,7 @@ result['aape']=result['aerror']/result['real']
 print(result['ape'].mean())
 print(result['aape'].mean())
 print((sum(preds)-sum(test_y))/sum(test_y))
-
+xgb.plot_importance(model)
 
 #joblib.dump(a,'e.pkl')
 #joblib.dump(e.pkl, '/Users/mcnamarp/Documents/consumer_insights/thao/')
