@@ -1,11 +1,11 @@
 with all_emails as
 (
 select 
-sj.exctgt_send_id as send_id, 
+sj.exctgt_send_id, 
 sj.exctgt_sendjob_id , 
-sj.exctgt_sched_time as exctgt_email_send_time, 
+sj.exctgt_sched_time , 
 dt.full_date,
-sj.exctgt_email_name as email_name , 
+sj.exctgt_email_name , 
 sj.exctgt_business_unit_name ,
 sj.exctgt_subject ,
 kpi.exctgt_campaign_code,
@@ -106,7 +106,7 @@ sj.exctgt_subject,
 kpi.exctgt_campaign_code,
 kpi.exctgt_cell_code,
 dt.full_date,
-sj.exctgt_from_name,
+sj.exctgt_from_name
 order by sj.exctgt_send_id, sj.exctgt_sched_time
 )
 select * from all_emails
