@@ -7,7 +7,7 @@ import matplotlib.pylab as plt
 import sqlalchemy
 import xgboost as xgb
 from sklearn.externals import joblib
-
+#define xgboost model function
 def runXGB(train_X, train_y, test_X, feature_names=None, num_rounds=5000):
     param = {}
     param['objective'] = "reg:linear"
@@ -31,9 +31,9 @@ def runXGB(train_X, train_y, test_X, feature_names=None, num_rounds=5000):
     pred_test_y = model.predict(xgtest)
     return pred_test_y, model
 
-
+#establish connnection with database
 engine = sqlalchemy.create_engine("redshift+psycopg2://haot:Welcome9582!@rsmsgbia.c5dyht7ygr3w.us-east-1.redshift.amazonaws.com:5476/msgbiadb")
-
+#sql query to run in the database
 renewals_query = '''
 with TABLE_1
   AS (
@@ -204,13 +204,12 @@ order by full_date ASC
 
 
 
-
+#load data from sql query
 camp= pd.read_sql(camp_query, engine)
 data = pd.read_sql(renewals_query, engine)
 
-# CLEAN SALES DATA #
+# CLEAN SALES DATA fill in missing date
 data=data.groupby('full_date').sum().reset_index()
-
 data=data.dropna()
 data=data.set_index('full_date')
 idx = pd.date_range('05-07-2015', '01-01-2018')
@@ -219,14 +218,14 @@ data =data.reindex(idx, fill_value=0)
 data['date']=data.index
 data=data.reset_index(drop=True)
 data['date']=pd.to_datetime(data['date'])
-
+#drop unexplainable huge spike
 data = data[data.date!= '11/20/2015']
 data = data[data.date!= '7/13/2017']
 data = data[data.date!= '7/12/2017']
 data = data[data.date!= '9/22/2016']
 data = data[data.date!= '10/18/2016']
 
-#promo,presale
+#add promo,presale,onsale data
 data['date']=pd.to_datetime(data['date']).dt.date
 
 promo_dates = pd.to_datetime(['2016-06-20', '2016-08-02', '2016-08-10', '2016-08-17', '2016-09-01', '2016-09-25', '2016-09-26', '2016-09-27', '2016-09-28', '2016-09-29', '2016-09-30', '2016-10-01', '2016-10-02', '2016-10-03', '2016-10-04', '2016-10-05', '2016-10-06', '2016-10-07', '2016-10-08']).date
@@ -270,7 +269,7 @@ data = pd.merge(data, camp, how ='left', left_on = ['date'], right_on = ['full_d
 data['sent']=data['sent'].fillna(0)
 #data['senty']=data['senty'].fillna(0)
 
-#christmas and ticket left
+#add ticket left
 first = pd.read_sql(first_query, engine)
 second= pd.read_sql(second_query, engine)
 third= pd.read_sql(third_query, engine)
@@ -285,7 +284,7 @@ third['left']=np.cumsum(third['count'])
 first=first.drop(['count'],axis=1)
 second=second.drop(['count'],axis=1)
 third=third.drop(['count'],axis=1)
-
+#add days to Christmas
 data['christmas']=data['date'].apply(lambda x: (x-datetime.date(2015,12,25)).days)
 data1=data[data.christmas<10]
 data1 = pd.merge(data1, first, how ='left', left_on = ['date'], right_on = ['tm_event_date'])
@@ -312,7 +311,8 @@ data['year']=data['date'].apply(lambda x:x.year)
 #month
 
 data['month']=data['date'].apply(lambda x:x.month)
-#drop unuseful
+
+#drop unuseful column
 
 #data=data.drop(['Brand','Date','DATE','tm_event_date','date'],axis=1)
 data=data.drop(['Brand','Date','DATE','tm_event_date','date','full_date'],axis=1)
@@ -330,6 +330,8 @@ preds, model = runXGB(train_x, train_y, test_x, num_rounds=1500)
 
 data5=data[800:849].reset_index(drop=True)
 test_y=data5['count']
+
+#validate result
 result=pd.DataFrame()
 result['predict']=preds
 result['real']=test_y
@@ -343,6 +345,6 @@ print(result['ape'].mean())
 print(result['aape'].mean())
 print((sum(preds)-sum(test_y))/sum(test_y))
 xgb.plot_importance(model)
-
+# save model
 #joblib.dump(a,'e.pkl')
 #joblib.dump(e.pkl, '/Users/mcnamarp/Documents/consumer_insights/thao/')
