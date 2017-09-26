@@ -13,10 +13,10 @@ import os
 #connect to stubhub API
 engine = sqlalchemy.create_engine("mysql+mysqldb://Rangers:19931104@rangers.cbtjzutpd1ig.us-east-2.rds.amazonaws.com:3306/Rangers")
 
-app_token = "a7e64ebe-0998-3dcd-afa8-88b5594440c9"
-consumer_key = "ebxARAhZKo2_4abI3vroPlkUOTEa"
-consumer_secret = "TuefeH8yl8rhzjXnBg1spQD4qmsa"
-stubhub_username = "haotianyu1104@gmail.com"
+app_token = "e7449bda-b8b1-3345-a9f2-d21fc9f6a2e7"
+consumer_key = "NHx7zundSqf2YThqfbdimE_jzqUa"
+consumer_secret = "CPJmFDZgbXoeX1Bjg7lzF78OF9ca"
+stubhub_username = "Tianyu.Hao@msg.com"
 stubhub_password = "Dududai1104"
 combo = consumer_key + ':' + consumer_secret
 basic_authorization_token = base64.b64encode(combo.encode('utf-8'))
