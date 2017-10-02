@@ -40,7 +40,7 @@ headers['Accept'] = 'application/json'
 headers['Accept-Encoding'] = 'application/json'
 #search for all Rangers games' id
 id_df=pd.DataFrame()
-search_url = 'https://api.stubhub.com/search/catalog/events/v3?name=rangers&parking=false&city=New York&rows=100&status=active'
+search_url = 'https://api.stubhub.com/search/catalog/events/v3?name=rangers&parking=false&city=New York&rows=100&status=active&minAvailableTickets=1'
 search = requests.get(search_url, headers=headers)
 search_dict= search.json()
 id_df=id_df.append(pd.DataFrame(search_dict['events']))
@@ -50,7 +50,7 @@ for id in id_df['id']:
     eventid = '%s'%id
     listing_df=pd.DataFrame()
 
-    for i in np.arange(0,4,1):
+    for i in np.arange(0,5,1):
         data = {'eventid':eventid,'start':250*i,'rows':250}
         inventory = requests.get(inventory_url, headers=headers, params=data)
         inv = inventory.json()

@@ -6,8 +6,8 @@ dt.full_date,
 sj.exctgt_email_name as email_name , 
 sj.exctgt_business_unit_name ,
 sj.exctgt_subject ,
-kpi.exctgt_campaign_code,
-kpi.exctgt_cell_code,
+--kpi.exctgt_campaign_code,
+--kpi.exctgt_cell_code,
 sj.exctgt_from_name,
 sum(kpi.exctgt_email_sent_count) as emails_sent,
 sum(kpi.exctgt_email_delivered_count) as emails_delivered, 
@@ -88,18 +88,18 @@ and  sj.exctgt_job_status = 'Complete'
 and kpi.exctgt_email_address not like '%msg.com'
 and kpi.exctgt_email_address not like '%thegarden.com'
 and kpi.exctgt_email_address not like '%emailonacid.com'
-and upper(kpi.exctgt_cell_code) not like upper('SEED%')
-and upper(kpi.exctgt_campaign_code) not like upper('%BRIGIDTESTLIST%')
-and upper(kpi.exctgt_campaign_code) not like upper('%TEST_%')
---and sj.exctgt_sched_time between cast('01/01/2017' as timestamp) and cast('04/30/2017' as timestamp)
+--and upper(kpi.exctgt_cell_code) not like upper('SEED%')
+--and upper(kpi.exctgt_campaign_code) not like upper('%BRIGIDTESTLIST%')
+--and upper(kpi.exctgt_campaign_code) not like upper('%TEST_%')
+and sj.exctgt_sched_time between cast('08/22/2017' as timestamp) and cast('08/23/2017' as timestamp)
 group by sj.exctgt_send_id, 
 sj.exctgt_sendjob_id ,
 sj.exctgt_sched_time, 
 sj.exctgt_email_name , 
 sj.exctgt_business_unit_name, 
 sj.exctgt_subject,
-kpi.exctgt_campaign_code,
-kpi.exctgt_cell_code,
+--kpi.exctgt_campaign_code,
+--kpi.exctgt_cell_code,
 dt.full_date,
 sj.exctgt_from_name
 order by sj.exctgt_send_id, sj.exctgt_sched_time

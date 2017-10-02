@@ -39,14 +39,14 @@ with TABLE_1
   AS (
 SELECT tm_acct_id,tm_section_name,tm_row_name,tm_seat_num,tm_event_name,tickets_add_datetime
 FROM msgbiadb.ads_main.t_ticket_sales_event_seat
-where tm_event_name_long = 'RADIO CITY CHRISTMAS SPECTACULAR'  and tm_comp_name='Not Comp' and ticket_group_flag='N' and ticket_type_desc LIKE '%%Individual%%' 
+where  upper(tm_event_name_long) SIMILAR TO upper('%%CHRISTMAS SPECTACULAR%%' )  and tm_comp_name='Not Comp' and ticket_group_flag='N' and ticket_type_desc LIKE '%%Individual%%' 
 GROUP BY tm_acct_id,tm_section_name,tm_row_name,tm_seat_num,tm_event_name,tickets_add_datetime
 having count(*)=1
 ),
   Table_2 AS (
   SELECT *
   FROM msgbiadb.ads_main.t_ticket_sales_event_seat
-  WHERE tm_event_name_long = 'RADIO CITY CHRISTMAS SPECTACULAR' and ticket_group_flag='N' AND tm_comp_name = 'Not Comp' and ticket_type_desc LIKE '%%Individual%%'  
+  WHERE  upper(tm_event_name_long) SIMILAR TO upper('%%CHRISTMAS SPECTACULAR%%' )  and ticket_group_flag='N' AND tm_comp_name = 'Not Comp' and ticket_type_desc LIKE '%%Individual%%'  
 
              ),
 out AS
@@ -113,6 +113,7 @@ out2 AS
 select full_date,count from out1 
 order by full_date desc
 '''
+
 
 third_query = '''
 WITH Table_1
@@ -238,12 +239,12 @@ promoy_dates = pd.to_datetime(['2016-06-21', '2016-08-03', '2016-08-11', '2016-0
 data['promoy']=[1 if data['date'][i] in promoy_dates else 0 for i in data.index]
 saley_dates = pd.to_datetime(['2016-06-21', '2016-08-03', '2016-08-11', '2016-08-18']).date
 data['saley']=[1 if data['date'][i] in saley_dates else 0 for i in data.index]
-
+'''
 
 
 onsaley_dates = pd.to_datetime([ '2015-05-20','2016-08-24', '2017-08-18']).date
 data['onsaley']=[1 if data['date'][i] in onsaley_dates else 0 for i in data.index]
-'''
+
 
 onsale_dates = pd.to_datetime(['2015-05-19', '2016-08-23', '2017-08-17']).date
 data['onsale']=[1 if data['date'][i] in onsale_dates else 0 for i in data.index]
@@ -325,16 +326,16 @@ data['month']=data['date'].apply(lambda x:x.month)
 data=data.drop(['Brand','Date','DATE','tm_event_date','date','full_date'],axis=1)
 #fit model
 
-train_x=data[:800].drop(['count'],axis=1)
-train_y=data[:800]['count']
+train_x=data[:860].drop(['count'],axis=1)
+train_y=data[:860]['count']
 #regr = RandomForestRegressor(n_estimators= 500, n_jobs = -1)
 #a=regr.fit(train_x, train_y)
 
-test_x=data[800:849].drop(['count'],axis=1)
+test_x=data[860:872].drop(['count'],axis=1)
 #b=a.predict(test_x)
 preds, model = runXGB(train_x, train_y, test_x, num_rounds=1500)
 
-data5=data[800:849].reset_index(drop=True)
+data5=data[860:872].reset_index(drop=True)
 test_y=data5['count']
 result=pd.DataFrame()
 result['predict']=preds
