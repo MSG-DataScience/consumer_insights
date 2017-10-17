@@ -13,14 +13,13 @@ def runXGB(train_X, train_y, test_X, feature_names=None, num_rounds=5000):
     param['objective'] = "reg:linear"
     param['booster']="gbtree"
     param['eta'] = 0.03
-    param['max_depth'] = 3
-    param['colsample_bytree'] = 0.6
+    param['colsample_bytree'] = 0.5
     param['silent'] = 1
-    param['subsample'] = 0.8
-    param['min_child_weight']=5
-    param['colsample_bytree'] = 0.7
+    param['subsample'] = 0.9
+    param['min_child_weight']=1
+    param['max_depth'] = 4
     param['eval_metric']="mae"
-
+    
     plst = list(param.items())
     xgtrain = xgb.DMatrix(train_X, label=train_y)
 
@@ -39,14 +38,14 @@ with TABLE_1
   AS (
 SELECT tm_acct_id,tm_section_name,tm_row_name,tm_seat_num,tm_event_name,tickets_add_datetime
 FROM msgbiadb.ads_main.t_ticket_sales_event_seat
-where  upper(tm_event_name_long) SIMILAR TO upper('%%CHRISTMAS SPECTACULAR%%' )  and tm_comp_name='Not Comp' and ticket_group_flag='N' and ticket_type_desc LIKE '%%Individual%%' 
+where  upper(tm_event_name_long) SIMILAR TO upper('%%CHRISTMAS SPECTACULAR%%' )  and tm_comp_name='Not Comp' and ticket_group_flag='N' and ticket_type_desc LIKE '%%Individual%%' and acct_type_desc!='Trade Desk'
 GROUP BY tm_acct_id,tm_section_name,tm_row_name,tm_seat_num,tm_event_name,tickets_add_datetime
 having count(*)=1
 ),
   Table_2 AS (
   SELECT *
   FROM msgbiadb.ads_main.t_ticket_sales_event_seat
-  WHERE  upper(tm_event_name_long) SIMILAR TO upper('%%CHRISTMAS SPECTACULAR%%' )  and ticket_group_flag='N' AND tm_comp_name = 'Not Comp' and ticket_type_desc LIKE '%%Individual%%'  
+  WHERE  upper(tm_event_name_long) SIMILAR TO upper('%%CHRISTMAS SPECTACULAR%%' )  and ticket_group_flag='N' AND tm_comp_name = 'Not Comp' and ticket_type_desc LIKE '%%Individual%%' and acct_type_desc!='Trade Desk' 
 
              ),
 out AS
@@ -322,20 +321,21 @@ data['year']=data['date'].apply(lambda x:x.year)
 data['month']=data['date'].apply(lambda x:x.month)
 #drop unuseful
 
+
 #data=data.drop(['Brand','Date','DATE','tm_event_date','date'],axis=1)
 data=data.drop(['Brand','Date','DATE','tm_event_date','date','full_date'],axis=1)
 #fit model
 
-train_x=data[:860].drop(['count'],axis=1)
-train_y=data[:860]['count']
+train_x=data[:800].drop(['count'],axis=1)
+train_y=data[:800]['count']
 #regr = RandomForestRegressor(n_estimators= 500, n_jobs = -1)
 #a=regr.fit(train_x, train_y)
 
-test_x=data[860:872].drop(['count'],axis=1)
+test_x=data[800:873].drop(['count'],axis=1)
 #b=a.predict(test_x)
-preds, model = runXGB(train_x, train_y, test_x, num_rounds=1500)
+preds, model = runXGB(train_x, train_y, test_x, num_rounds=1200)
 
-data5=data[860:872].reset_index(drop=True)
+data5=data[800:873].reset_index(drop=True)
 test_y=data5['count']
 result=pd.DataFrame()
 result['predict']=preds

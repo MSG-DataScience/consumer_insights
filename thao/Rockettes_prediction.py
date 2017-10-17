@@ -264,11 +264,11 @@ group=group[pd.notnull(group['full_date'])]
 data['full_date'] = data['full_date'].astype(str)
 data["promo"]=data["full_date"].map(lambda x: 1 if x =='2016-06-20' else 1 if x =='2016-08-02' else 1 if x =='2016-08-10' else 1 if x =='2016-08-17' else 1 if x =='2016-09-01' else 1 if x =='2016-09-25' else 1 if x =='2016-09-26' else 1 if x =='2016-09-27' else 1 if x =='2016-09-28' else 1 if x =='2016-09-29' else 1 if x =='2016-09-30' else 1 if x =='2016-10-01' else 1 if x =='2016-10-02' else 1 if x =='2016-10-03' else 1 if x =='2016-10-04' else 1 if x =='2016-10-05' else 1 if x =='2016-10-06' else 1 if x =='2016-10-07' else 1 if x =='2016-10-08' else 0 )
 data["presale"]=data["full_date"].map(lambda x: 1 if x =='2016-06-20' else 1 if x =='2016-08-02' else 1 if x =='2016-08-10' else 1 if x =='2016-08-17' else 0 )
-traffic=pd.read_csv('C:/Users/haoti/Downloads/traffic.csv')
-social=pd.read_csv('C:/Users/haoti/Downloads/social.csv')
+traffic=pd.read_csv('C:/Users/haot/Documents/GitHub/consumer_insights/thao/rockettes_visitors.csv')
+social=pd.read_csv('C:/Users/haot/Documents/GitHub/consumer_insights/thao/rockettes_social.csv')
 traffic=traffic.rename(columns={'Date':'full_date'})
 social=social.rename(columns={'Date':'full_date'})  
-social=social.rename(columns={'Facebook Page Impressions':'Facebook'})
+social=social.rename(columns={'Twitter Organic Impressions':'Twitter','Facebook Page Impressions':'Facebook'})
 traffic=traffic.rename(columns={'Selected Period':'traffic'})
 data = data[data.full_date!= '11/20/2015']
 data['full_date'] = pd.to_datetime(data['full_date'])
@@ -370,7 +370,6 @@ test_y = data5.number
 
 preds, model = runXGB(train_X, train_y, test_X, num_rounds=1500)
 
-print(r2_score(test_y,preds))
 
 
 result=pd.DataFrame()
