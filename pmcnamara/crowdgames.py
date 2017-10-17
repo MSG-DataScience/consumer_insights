@@ -1,10 +1,41 @@
 import pandas as pd
 import numpy as np
+import re
 
+# CREATING COMPLETE WIRESHARK DATA #
+with open('/Users/mcnamarp/Downloads/gamer_test', 'r') as myfile:
+    data=myfile.read().replace('\n', '')
+
+data2 = re.findall(r'Frame (.*?)No.',data)
+error = "60 bytes on wire (480 bits), 60 bytes captured (480 bits) on interface 0IEEE 802.3 Ethernet Logical-Link Control"
+data2 = [x for x in data2 if error not in x]
+data3 = [i.split('Src: ')[1].split(',')[0] if 'Src: ' in i else 'NA' for i in data2]
+data4 = [i.split('(')[1].split(')')[0] if i != 'NA' else i for i in data3]
+data5 = pd.read_csv('//Users/mcnamarp/Downloads/gamer_test_base')
 # CLEANING UP WIRESHARK PACKET DATA #
-ips = ['10.202.9.101','162.242.150.89','54.205.101.85','23.253.58.227','176.34.241.253','52.85.101.216','52.85.101.116',
-		'52.85.101.171','52.85.101.236','52.85.101.254','52.85.101.109','52.85.101.20','52.85.101.86','52.85.101.254','10.202.9.101',
-		'54.192.48.232','54.192.48.72','54.192.48.6','54.192.48.28','54.192.48.106','54.192.48.32','54.192.48.16','54.192.48.225']
+ips = ['10.202.9.101',
+ '162.242.150.89',
+ '176.34.241.253',
+ '23.253.58.227',
+ '52.10.36.37',
+ '52.85.101.109',
+ '52.85.101.116',
+ '52.85.101.171',
+ '52.85.101.20',
+ '52.85.101.216',
+ '52.85.101.236',
+ '52.85.101.254',
+ '52.85.101.86',
+ '54.148.150.151',
+ '54.192.48.106',
+ '54.192.48.16',
+ '54.192.48.225',
+ '54.192.48.232',
+ '54.192.48.28',
+ '54.192.48.32',
+ '54.192.48.6',
+ '54.192.48.72',
+ '54.205.101.85']
 
 data_10r0 = pd.read_csv('/Users/mcnamarp/Downloads/Rangers 615-620 10-10.2017.csv').drop(['Info','Protocol'], axis = 1)
 data_10r0['crowdgame'] = 0
@@ -20,7 +51,7 @@ data_9k = pd.merge(data_9k.drop(['crowdgame'], axis = 1), played_game9k, on = 'S
 # REMOVING LIKELY EQUIPMENT IPs #
 data_9k = data_9k[~data_9k.isin(set(data_10r0['Source']))]
 pd.DataFrame(data_9k[['Source','crowdgame']].drop_duplicates()['crowdgame'].value_counts()).join(data_9k.groupby('crowdgame').sum()['Length']/1000000)
-
+'''
 data_10r1 = pd.read_csv('/Users/mcnamarp/Downloads/Rangers745-750. 10-10-2017.csv').drop(['Info','Protocol'], axis = 1)
 data_10r1['crowdgame'] = 0
 data_10r1.ix[data_10r1['Destination'].isin(ips), 'crowdgame'] = 1
@@ -35,7 +66,7 @@ data_10r2 = pd.read_csv('/Users/mcnamarp/Downloads/Rangers757-802 Oct 10th 2017.
 data_10r2['crowdgame'] = 0
 data_10r2.ix[data_10r2['Destination'].isin(ips), 'crowdgame'] = 1
 data_10r2 = data_10r2[(data_10r2['Time'] >= data_10r2[data_10r2['crowdgame'] == 1]['Time'].min()) & (data_10r2['Time'] <= data_10r2[data_10r2['crowdgame'] == 1]['Time'].max())] 
-
+'''
 '''
 Time = moment from start of game a packet was transferred
 Source = Device IP address
