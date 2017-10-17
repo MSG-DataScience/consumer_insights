@@ -8,7 +8,6 @@ import numpy as np
 import datetime
 from sklearn import preprocessing
 import sqlalchemy
-from sklearn.metrics import r2_score
 import statsmodels.api as sm
 
 engine = sqlalchemy.create_engine("redshift+psycopg2://mcnamarp:Welcome2859!@rsmsgbia.c5dyht7ygr3w.us-east-1.redshift.amazonaws.com:5476/msgbiadb")
@@ -34,25 +33,17 @@ tickets_sold,
 tickets_total_revenue, 
 tickets_add_datetime, 
 ticket_transaction_date,
-ticket_type_price_level,
 tm_comp_name,
 tm_season_name,
 mpd_indy_rank,
 mpd_game_num,
 tm_event_name_long,
-zip,
 ticket_sell_location_name
 from ads_main.t_ticket_sales_event_seat
 where 1=1
 and tm_season_name IN (
-'2015-16 New York Knicks',
-'2016-17 New York Knicks'
+'2016-17 New York Knicks',
 '2017-18 New York Knicks')
---and ticket_type_price_level IN (/*'Half Plan'*/'New Fulls', 'Individuals' ) 
---and tm_event_name='ENK0412E'
---and tm_section_name = 1
---and tm_row_name= 14
---and tm_seat_num = 6
 )
 select 
 *
@@ -60,6 +51,33 @@ from table1
 where tickets_sold>0
 and cust_sum >0
 and max_date=tickets_add_datetime
+AND ticket_type_price_level = 'Individuals'
+'''
+inventory_query = 
+'''
+select
+    mnfst.tm_season_name,
+    mnfst.tm_section_name,
+    mnfst.tm_row_name,
+    mnfst.tm_seat_num,
+    price.tm_price_code,
+    --
+    event.tm_event_name,
+    event.tm_event_name_long,
+    event.tm_event_date,
+    a.seats_avail_report_day_id,
+    a.seats_avail_purchase_price
+    --
+from ads_main.f_avail_event_seats a
+    join ads_main.d_event_plan event
+      on event.event_plan_id = a.event_plan_id
+    join ads_main.d_manifest_seat mnfst
+      on mnfst.manifest_seat_id = a.manifest_seat_id
+    join ads_main.d_price_code price
+     on price.price_code_id = a.price_code_id
+where  event.tm_season_name IN ('2016-17 New York Knicks', '2017-18 New York Knicks') ANd ticket_type_price_level = 'Individuals'
+and a.ads_current_flag = 'Y'
+and a.seats_avail_count > 0;
 '''
 
 data = pd.read_sql(query, engine)
@@ -85,7 +103,7 @@ seats_16 = data[data['tm_season_name'] == '2016-17 New York Knicks'].groupby(['t
 total_seats = pd.merge(total_seats, seats_15, on = ['tm_section_name','tm_row_name','tm_seat_num'], how = 'left')
 total_seats = pd.merge(total_seats, seats_16, on = ['tm_section_name','tm_row_name','tm_seat_num'], how = 'left')
 '''
-# COMPS ANALYSIS #
+# COMPS ANALYSIS # 
 comps = data[data['tm_comp_name'] != 'Not Comp']
 comps = comps[~comps['tm_comp_name'].isin(['MADISON CLUB','NBA','Media','LEAGUE','PLAYERS'])]
 comps.groupby(['tm_season_name','tm_comp_name']).count()['tm_acct_id'].reset_index().set_index('tm_season_name').join(data.groupby('tm_season_name').count()['cust_sum'])
@@ -159,8 +177,8 @@ reg_data['2E*I'] = reg_data['2Early']*reg_data['inventory']
 reg_data['3W*I'] = reg_data['3Week-Ahead']*reg_data['inventory']
 reg_data['4L*I'] = reg_data['4Last-Minute']*reg_data['inventory']
 
-reg_data_bo = reg_data[reg_data['ticket_sell_location_name'] == 'Box Office'].drop(['ticket_sell_location_name'], axis = 1)
-reg_data_ol = reg_data[reg_data['ticket_sell_location_name'] == 'Internet'].drop(['ticket_sell_location_name'], axis = 1)
+#reg_data_bo = reg_data[reg_data['ticket_sell_location_name'] == 'Box Office'].drop(['ticket_sell_location_name'], axis = 1)
+#reg_data_ol = reg_data[reg_data['ticket_sell_location_name'] == 'Internet'].drop(['ticket_sell_location_name'], axis = 1)
 
 # RUN REGRESSION #
 result = sm.OLS(reg_data['tickets_sold'], reg_data.drop(['tickets_sold','ticket_sell_location_name'], axis = 1)).fit()
@@ -170,7 +188,7 @@ result_bo.summary()
 result_ol = sm.OLS(reg_data_ol['tickets_sold'], reg_data_ol.drop(['tickets_sold'], axis = 1)).fit()
 result_ol.summary()
 
-
+'''
 x = data[data['tm_season_name'] == '2016-17 New York Knicks'].groupby(['tm_event_name','tm_event_name_long','tm_event_date','ticket_type_price_level']).sum()['cust_sum'].reset_index(level=3).join(data.groupby(['tm_event_name','tm_event_name_long','tm_event_date']).count()['tickets_sold'])
 x['prop'] = (x['cust_sum'] / x['tickets_sold']).round(3)
 type_avgs = x.groupby('ticket_type_price_level').mean()['prop'].reset_index().rename(columns = {'prop':'type_avg'}).round(3)
@@ -187,4 +205,4 @@ y['diff'] = (y['tickets_total_revenue'] / y['game_avg']).round(2)
 
 data.ix[data['ticket_type_price_level'].isin(['Mini Plan','New Fulls','Renewals','Pick Plan','Lounges','Half Plan']), 'ticket_type_price_level'] = 'Plans & Lounges'
 data[data['tm_event_name'].isin(promos)].groupby(['ticket_type_price_level','days_out_cat']).sum()['tickets_sold']/data[data['tm_event_name'].isin(promos)]['tickets_sold'].sum()
-data[~data['tm_event_name'].isin(promos)].groupby(['ticket_type_price_level','days_out_cat']).sum()['tickets_sold']/data[~data['tm_event_name'].isin(promos)]['tickets_sold'].sum()
+data[~data['tm_event_name'].isin(promos)].groupby(['ticket_type_price_level','days_out_cat']).sum()['tickets_sold']/data[~data['tm_event_name'].isin(promos)]['tickets_sold'].sum()'''

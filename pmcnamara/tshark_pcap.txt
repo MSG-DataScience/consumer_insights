@@ -1,0 +1,8 @@
+with open('/Users/mcnamarp/Downloads/Rangers 615-620.pcapng') as fp:
+    scanner = FileScanner(fp)
+    for block in scanner:
+    	dir(block)
+    	
+tshark -r Rangers_615-620.pcapng -n -T fields -E separator=, -e frame.time -e ip.src -e ip.dst -e ip.proto -e tcp.port >outfile.csv
+
+tshark -r Rangers_615-620.pcapng -T fields -e ip.src -E separator=, -E occurrence=f > traffic.csv
