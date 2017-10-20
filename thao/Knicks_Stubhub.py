@@ -66,6 +66,7 @@ for id in id_df['id']:
     listing_df['eventName'] = id_df.loc[id_df['id']==int(eventid),'name'].iloc[0]
     listing_df['eventDate'] = id_df.loc[id_df['id']==int(eventid),'eventDateLocal'].iloc[0][:10] 
     listing_df['timestamp'] = t
+    '''
     if 'listingAttributeCategoryList' in listing_df and 'faceValue' in listing_df:
         my_col = ['isGA','deliveryMethodList', 'deliveryTypeList', 'dirtyTicketInd','faceValue','listingAttributeCategoryList','score',
                        'listingAttributeList','sectionId','sellerOwnInd','sellerSectionName','splitOption','splitVector','ticketSplit','zoneId','zoneName']
@@ -77,7 +78,8 @@ for id in id_df['id']:
                        'listingAttributeList','sectionId','sellerOwnInd','sellerSectionName','splitOption','splitVector','ticketSplit','zoneId','zoneName']
     else:
         my_col = ['isGA','deliveryMethodList', 'deliveryTypeList', 'dirtyTicketInd', 'score',
-                       'listingAttributeList','sectionId','sellerOwnInd','sellerSectionName','splitOption','splitVector','ticketSplit','zoneId','zoneName']  
-    result=listing_df.drop(my_col,axis=1)
+                       'listingAttributeList','sectionId','sellerOwnInd','sellerSectionName','splitOption','splitVector','ticketSplit','zoneId','zoneName']
+     '''
+    result=listing_df[['currentPrice','eventDate','eventName','listingId','listingPrice','quantity','row','seatNumbers','sectionName','timestamp']]
 # store data into the cloud database
     result.to_sql(name='Knicks', con=engine, if_exists = 'append', index=False)
