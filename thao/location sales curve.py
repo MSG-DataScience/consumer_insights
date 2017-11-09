@@ -45,9 +45,8 @@ country
 
 from ads_main.t_ticket_sales_event_seat
 where 1=1
-and tm_season_name IN ('2017-18 New York Knicks'
-) 
---and tm_event_name In('ENK1008E','ENK1010E','ENK1015E','ENK1029E','ENK1102E','ENK1106M','ENK1109E','ENK1114E','ENK1116E','ENK1120M')
+--and tm_season_name IN ('2016-17 New York Knicks') 
+and tm_event_name In('ENK1008E','ENK1010E','ENK1015E','ENK1029E','ENK1102E')
 )
 select
 tm_event_date,full_date,zip,country
@@ -61,7 +60,7 @@ and ticket_type_price_level = 'Individuals'
 and acct_type_desc!='Trade Desk'
 and acct_type_desc!= 'Sponsor'
 and house_seat_flag='N'
-and full_date<'2017-11-3'
+and full_date<'2016-11-3'
 order by full_date
 '''
 data = pd.read_sql(query, engine)
