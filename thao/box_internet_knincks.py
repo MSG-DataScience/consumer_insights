@@ -42,14 +42,14 @@ ticket_group_flag,
 house_seat_flag,
 full_date,
 zip,
-country
-
+country,
+tm_event_time
 from ads_main.t_ticket_sales_event_seat
 where 1=1
-and tm_season_name IN ('2017-18 New York Knicks') 
---and tm_event_name In('ENK1008E','ENK1010E','ENK1015E','ENK1029E','ENK1102E')
+and tm_season_name IN ('2016-17 New York Knicks') 
+and tm_event_name not in('ENKPRE')
 )
-select distinct ticket_sell_location_name
+select *
 from table1
 where tickets_sold>0
 and cust_sum >0
@@ -60,15 +60,17 @@ and ticket_type_price_level = 'Individuals'
 and acct_type_desc!='Trade Desk'
 and acct_type_desc!= 'Sponsor'
 and house_seat_flag='N'
-and full_date<'2017-11-9'
+and tm_event_date<'2017-11-13'
+and tm_event_time>'16:00:00'
 order by full_date
 '''
 data = pd.read_sql(query, engine)
-'''
+
 data['tm_event_date']=pd.to_datetime(data['tm_event_date']).dt.date
 data['full_date']=pd.to_datetime(data['full_date']).dt.date
 data['a']=data['tm_event_date']-data['full_date']
 data['a']=data['a'].apply(lambda x: x.total_seconds())
-data=data[data.a<100000]
-'''
-print(data.groupby('ticket_sell_location_name').count())
+data=data[data.a==0]
+data['tickets_add_datetime']=pd.to_datetime(data['tickets_add_datetime']).dt.hour
+
+a=data.groupby(['tickets_add_datetime']).count()
