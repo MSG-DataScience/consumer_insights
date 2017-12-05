@@ -36,3 +36,20 @@ data_p = data_p[~data_p['tm_acct_id'].isin(existing_plans['tm_acct_id'])]
 data_i[['email_address','tm_acct_id','Score_Knicks_Fans']].drop_duplicates().to_csv('/Users/mcnamarp/Downloads/knicks_indy_scores.csv', index = False)
 
 data_p[['email_address','tm_acct_id','Score_Knicks_Fans']].drop_duplicates().to_csv('/Users/mcnamarp/Downloads/knicks_multi_scores.csv', index = False)
+
+# WESTCHESTER DATA EXPORT #
+existing_wc_planholders_query = '''
+SELECT DISTINCT email_address
+FROM ads_main.t_ticket_sales_event_seat
+WHERE tm_season_name = '2017-18 Westchester Knicks' AND tm_plan_total_events IS NOT NULL
+'''
+existing_wc_plans = pd.read_sql(existing_wc_planholders_query, engine)
+
+wc_zips = pd.read_csv('/Users/mcnamarp/Downloads/westchester_zips.csv', dtype = 'str')
+
+westchester_accounts_query = '''SELECT DISTINCT email_address FROM ads_main.d_customer_account WHERE zip IN (''' + str(list(wc_zips['zip'])) + ')'
+westchester_accounts_query = westchester_accounts_query.replace('[','').replace(']','')
+westchester_emails = pd.read_sql(westchester_accounts_query, engine)
+westchester_emails = westchester_emails[~westchester_emails['email_address'].isin(existing_wc_plans['email_address'])]
+westchester_accounts = pd.merge(data_i, westchester_emails, on = 'email_address')
+westchester_accounts['email_address'].drop_duplicates().to_csv('wck_argus.txt', index = False)
