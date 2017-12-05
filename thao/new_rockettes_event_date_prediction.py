@@ -185,12 +185,12 @@ order by full_date ASC
 
 camp= pd.read_sql(camp_query, engine)
 data = pd.read_sql(renewals_query, engine)
-
 # CLEAN SALES DATA #
 data=data.groupby('full_date').sum().reset_index()
 
 data=data.dropna()
 data=data.set_index('full_date')
+'''
 idx = pd.date_range('05-07-2015', '01-01-2018')
 data.index = pd.DatetimeIndex(data.index)
 data =data.reindex(idx, fill_value=0)
@@ -214,7 +214,7 @@ data['promo']=[1 if data['date'][i] in promo_dates else 0 for i in data.index]
 sale_dates = pd.to_datetime(['2016-06-20', '2016-08-02', '2016-08-10', '2016-08-17']).date
 data['sale']=[1 if data['date'][i] in sale_dates else 0 for i in data.index]
 data['count'][460]=3243-2808
-'''
+
 promoy_dates = pd.to_datetime(['2016-06-21', '2016-08-03', '2016-08-11', '2016-08-18', '2016-09-02', '2016-09-26', '2016-09-27', '2016-09-28', '2016-09-29', '2016-09-30', '2016-10-01', '2016-10-02', '2016-10-03', '2016-10-04', '2016-10-05', '2016-10-06', '2016-10-07', '2016-10-08', '2016-10-09']).date
 data['promoy']=[1 if data['date'][i] in promoy_dates else 0 for i in data.index]
 saley_dates = pd.to_datetime(['2016-06-21', '2016-08-03', '2016-08-11', '2016-08-18']).date
@@ -222,7 +222,7 @@ data['saley']=[1 if data['date'][i] in saley_dates else 0 for i in data.index]
 
 onsaley_dates = pd.to_datetime([ '2015-05-20','2016-08-24', '2017-08-18']).date
 data['onsaley']=[1 if data['date'][i] in onsaley_dates else 0 for i in data.index]
-'''
+
 onsale_dates = pd.to_datetime(['2015-05-19', '2016-08-23', '2017-08-17']).date
 data['onsale']=[1 if data['date'][i] in onsale_dates else 0 for i in data.index]
 
@@ -337,3 +337,4 @@ print(y/50)
 
 #joblib.dump(a,'e.pkl')
 #joblib.dump(e.pkl, '/Users/mcnamarp/Documents/consumer_insights/thao/')
+'''
