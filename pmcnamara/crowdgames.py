@@ -37,7 +37,7 @@ ips = ['10.202.9.101',
  '54.192.48.72',
  '54.205.101.85']
 
-data_10r0 = pd.read_csv('/Users/mcnamarp/Downloads/Rangers 615-620 10-10.2017.csv').drop(['Info','Protocol'], axis = 1)
+data_10r0 = pd.read_csv('/Users/mcnamarp/Downloads/Rangers 615-620 10-10.2017').drop(['No.','Info','Protocol'], axis = 1)
 data_10r0['crowdgame'] = 0
 data_10r0.ix[data_10r0['Destination'].isin(ips), 'crowdgame'] = 1
 data_10r0 = data_10r0[(data_10r0['Time'] >= data_10r0[data_10r0['crowdgame'] == 1]['Time'].min()) & (data_10r0['Time'] <= data_10r0[data_10r0['crowdgame'] == 1]['Time'].max())] 

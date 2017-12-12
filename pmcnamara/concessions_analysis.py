@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import datetime
 import sqlalchemy
+from sklearn.preprocessing import MinMaxScaler
 
 engine = sqlalchemy.create_engine("redshift+psycopg2://mcnamarp:Welcome2859!@rsmsgbia.c5dyht7ygr3w.us-east-1.redshift.amazonaws.com:5476/msgbiadb")
 
@@ -24,6 +25,8 @@ sales['time'] = sales['tendered_datetime'].dt.time
 sales['event_month'] = pd.DatetimeIndex(sales['tendered_datetime']).month
 sales['event_year'] = pd.DatetimeIndex(sales['tendered_datetime']).year
 sales['day_name'] = pd.to_datetime(sales['tendered_datetime']).dt.weekday_name
+# remove september show where almost no sales come in #
+sales = sales[sales['event_date'] != datetime.date(2017,9,30)]
 
 # fixing shock top cost issue #
 shock_top_sales = ['FF SHOCK TOP /BELGIAN WHITE ALE /CONCERT 24OZ /FS','FF SHOCK TOP /BELGIAN WHITE ALE /24OZ /FS']
@@ -109,3 +112,9 @@ event_level_sales['gross_percap'] = event_level_sales['gross'] / event_level_sal
 
 data = pd.merge(data, attendance, left_on = 'Date', right_on = 'event_date', how = 'left').drop(['event_date'], axis = 1)
 data['attendance'].fillna(data['attendance'].mean(), inplace = True)
+
+# analyzing distribution of gross sales #
+gross = data[['Name','ID','Date','gross']]
+gross = gross.pivot_table(index = ['ID','Name'], columns = 'Date', values = 'gross')
+gross.index = gross.index.droplevel(level=0)
+MinMaxScaler().fit_transform(gross)

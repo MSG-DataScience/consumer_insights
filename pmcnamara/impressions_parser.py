@@ -9,12 +9,10 @@ import statsmodels as sm
 newest = max(glob.iglob('/Users/mcnamarp/Downloads/Initiative_Files/*.xlsx'), key=os.path.getctime)
 impressions = pd.read_excel(newest, sheetname = 'Paid Pivot', converters= {'Week Starting': pd.to_datetime})
 
-knicks_campaigns = ['New York Knicks','Knicks Indy','Knicks Partials']
-impressions = impressions[impressions['Campaign Name'].isin(knicks_campaigns)]
-
 # ARGUS ANALYSIS #
-argus_imp = impressions[impressions['Placement_14'].isin(['DATA DRIVEN PROSPECTING','INDY CRM TARGETING'])]
-argus_imp = argus_imp[argus_imp['Week Starting'].dt.date.isin([datetime.date(2017,11,13), datetime.date(2017,11,20),datetime.date(2017,11,27)])]
+argus_imp = impressions[impressions['Campaign Name'] == 'Knicks Indy']
+argus_imp = impressions[impressions['Week Number'].isin([47,48,49])]
+argus_imp = argus_imp[argus_imp['Placement_14'].isin(['DATA DRIVEN PROSPECTING','INDY CRM TARGETING'])]
 
 drops = ['Year','Month Number','Week Number','Creative ','Creative ID','%Viewable Impressions','Placement_1','Placement_2','Placement_3',
 		'Placement_4','Placement_5','Placement_6','Placement_7','Placement_8','Placement_9','Placement_10','Placement_11','Placement_12',
