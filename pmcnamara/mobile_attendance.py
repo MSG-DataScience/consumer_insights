@@ -8,11 +8,11 @@ import numpy as np
 engine = sqlalchemy.create_engine("redshift+psycopg2://mcnamarp:Welcome2859!@msgbiadb-prod.cqp6htpq4zp6.us-east-1.rds.amazonaws.com:5432/msgbiadb")
 
 mobile_data_query = '''
-SELECT DISTINCT e.tm_event_date::DATE, a.attendance_mobile_flag, c.tm_acct_id, lower(c.email_address) AS EMAIL, coalesce(pc.ticket_type_price_level,'Individuals') AS ticket_type, e.ads_source
+SELECT e.tm_event_date::DATE, e.tm_event_time, e.tm_event_name, a.attendance_mobile_flag, scan_time, c.tm_acct_id, e.tm_season_name 
 FROM ads_main.f_attendance_event_seat a
-join ads_main.d_event_plan e on e.event_plan_id=a.event_plan_id AND e.tm_season_name IN ('2016-17 New York Rangers','2016-17 New York Knicks')
-join ads_main.d_customer_account c on c.customer_account_id=a.customer_account_id and c.ads_source=c.ads_source and tm_acct_id NOT IN ('-1','-2')
-left join ads_main.d_price_code pc on pc.price_code_id=a.price_code_id
+JOIN ads_main.d_event_plan e on e.event_plan_id=a.event_plan_id AND e.tm_org_name IN ('RANGERS','Knicks')
+JOIN ads_main.d_customer_account c on c.customer_account_id=a.customer_account_id and c.ads_source=c.ads_source and tm_acct_id NOT IN ('-1','-2')
+LIMIT 500;
 '''
 mobile_data2 = pd.read_sql(mobile_data_query, engine, parse_dates = ['tm_event_date'])
 
@@ -25,7 +25,7 @@ mobile_data2.ix[mobile_data2['ticket_type'] == 'Mini Plan', 'ticket_type'] = 'Pa
 
 # HIGH-LEVEL STATS #
 mobile_data2.groupby(['ads_source','tm_acct_id']).max()['attendance_mobile_flag'].mean()
-mobile_data2[mobile_data2['attendance_mobile_flag'] == 1][['ads_source','tm_acct_id','ticket_type','attendance_mobile_flag']].drop_duplicates().groupby(['ads_source','ticket_type']).count()[['attendance_mobile_flag']].join(mobile_data2[['tm_acct_id','ads_source','ticket_type']].drop_duplicates().groupby(['ads_source','ticket_type']).count())
+mobile_data2[mobile_data2['attendance_mobile_flag'] == 1][['ads_source','tm_acct_id','ticket_type','attendance_mobile_flag']].drop_duplicates().groupby(['ads_source','ticket_type']).count()[['attendance_mobile_flag']].JOIN(mobile_data2[['tm_acct_id','ads_source','ticket_type']].drop_duplicates().groupby(['ads_source','ticket_type']).count())
 mobile_data2.groupby(['ads_source','tm_acct_id','ticket_type']).max()['attendance_mobile_flag'].reset_index().drop('tm_acct_id',axis = 1).groupby(['ads_source','ticket_type']).mean().round(2)
 acct_rates = mobile_data2.groupby(['ads_source','tm_acct_id','tm_event_date']).max()['attendance_mobile_flag'].reset_index().groupby(['ads_source','tm_acct_id']).mean()
 first_mobile_scan = mobile_data2[mobile_data2['attendance_mobile_flag'] == 1].groupby(['ads_source','tm_acct_id']).min()['tm_event_date'].reset_index().rename(columns = {'tm_event_date':'first_scan'})
@@ -54,12 +54,12 @@ data = pd.merge(data, demo_data, on = ['email'])
 data = pd.merge(data, games_attended.reset_index(), on = ['ads_source','email'])
 
 # GROUP BY MEANS #
-pd.DataFrame(data.groupby('EDUCATION').count()['email']).join(data.groupby('EDUCATION').mean()['attendance_mobile_flag'].round(2))
-pd.DataFrame(data.groupby('CHILDREN').count()['email']).join(data.groupby('CHILDREN').mean()['attendance_mobile_flag'].round(2))
-pd.DataFrame(data.groupby('GENDER').count()['email']).join(data.groupby('GENDER').mean()['attendance_mobile_flag'].round(2))
-pd.DataFrame(data.groupby('MARITAL_STATUS').count()['email']).join(data.groupby('MARITAL_STATUS').mean()['attendance_mobile_flag'].round(2))
-pd.DataFrame(data.groupby(['GENDER','MARITAL_STATUS']).count()['email']).join(data.groupby(['GENDER','MARITAL_STATUS']).mean()['attendance_mobile_flag'].round(2))
-pd.DataFrame(data.groupby('INCOME').count()['email']).join(data.groupby('INCOME').mean()['attendance_mobile_flag'].round(2))
+pd.DataFrame(data.groupby('EDUCATION').count()['email']).JOIN(data.groupby('EDUCATION').mean()['attendance_mobile_flag'].round(2))
+pd.DataFrame(data.groupby('CHILDREN').count()['email']).JOIN(data.groupby('CHILDREN').mean()['attendance_mobile_flag'].round(2))
+pd.DataFrame(data.groupby('GENDER').count()['email']).JOIN(data.groupby('GENDER').mean()['attendance_mobile_flag'].round(2))
+pd.DataFrame(data.groupby('MARITAL_STATUS').count()['email']).JOIN(data.groupby('MARITAL_STATUS').mean()['attendance_mobile_flag'].round(2))
+pd.DataFrame(data.groupby(['GENDER','MARITAL_STATUS']).count()['email']).JOIN(data.groupby(['GENDER','MARITAL_STATUS']).mean()['attendance_mobile_flag'].round(2))
+pd.DataFrame(data.groupby('INCOME').count()['email']).JOIN(data.groupby('INCOME').mean()['attendance_mobile_flag'].round(2))
 
 # USING LOGISTIC REGRESSION TO GET ODDS RATIOS FOR DIFFERENT CHARACTERISTICS #
 education_dummies = pd.get_dummies(data['EDUCATION'])
@@ -69,10 +69,10 @@ children_dummies = pd.get_dummies(data['CHILDREN'])
 gender_dummies = pd.get_dummies(data['GENDER'])
 marital_dummies = pd.get_dummies(data['MARITAL_STATUS'])
 #team_dummies = pd.get_dummies(data['ads_source'])
-dummies = children_dummies.join(marital_dummies).join(gender_dummies).rename(columns = {'YES':'CHILDREN'}).join(income_dummies)
+dummies = children_dummies.JOIN(marital_dummies).JOIN(gender_dummies).rename(columns = {'YES':'CHILDREN'}).JOIN(income_dummies)
 dummies.drop(['NO','MALE','MARRIED'], axis = 1, inplace = True)
 
-model_data = data.drop(['EDUCATION','INCOME','CHILDREN','GENDER','MARITAL_STATUS','ads_source','NETWORTH','tm_acct_id'], axis = 1).join(dummies)
+model_data = data.drop(['EDUCATION','INCOME','CHILDREN','GENDER','MARITAL_STATUS','ads_source','NETWORTH','tm_acct_id'], axis = 1).JOIN(dummies)
 logit = sm.Logit(model_data['attendance_mobile_flag'], model_data.drop(['attendance_mobile_flag','email'], axis = 1))
 result = logit.fit()
 result.summary()
@@ -110,7 +110,7 @@ mobile_data['email_address'] = mobile_data['email_address'].astype(str)
 
 # MOBILE USAGE BY TICKET GROUP #
 mobile_by_group = mobile_data.groupby(['customer_account_id','ads_source','category']).max()['attendance_mobile_flag'].reset_index()
-mobile_by_group[mobile_by_group['attendance_mobile_flag'] == 1].groupby(['ads_source','category']).count()[['attendance_mobile_flag']].join(mobile_by_group.groupby(['ads_source','category']).count()[['customer_account_id']])
+mobile_by_group[mobile_by_group['attendance_mobile_flag'] == 1].groupby(['ads_source','category']).count()[['attendance_mobile_flag']].JOIN(mobile_by_group.groupby(['ads_source','category']).count()[['customer_account_id']])
 first_mobile_scan = mobile_data[mobile_data['attendance_mobile_flag'] == 1].groupby(['customer_account_id','ads_source']).min()['date'].reset_index()
 
 # NEW MOBILE SCANS BY GAME #

@@ -47,7 +47,8 @@ data = pd.read_sql(query, engine)
 data_ = data.copy()
 #pd.read_csv('/Users/mcnamarp/Downloads/with_table1_as___select__SUM_tickets_sol.csv')
 #data = data[data['ticket_type_price_level'] == 'Individuals']
-preseasons = ['ENK1008E','ENK1010E','ENKPRE','ENK1015E','ESN1007E','ESN1012E','ESN1016E','ESNPRE','KTEST','ESN1013E']
+preseasons = ['ENK1008E','ENK1010E','ENKPRE','ENK1015E','ESN1007E','ESN1012E','ESN1016E','ESNPRE','KTEST','ESN1013E'you
+]
 data = data[~data['tm_event_name'].isin(preseasons)]
 
 # CONVERTING TO DATE OBJECTS #

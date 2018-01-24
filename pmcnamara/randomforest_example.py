@@ -1,7 +1,8 @@
 import matplotlib.pyplot as plt
 from sklearn.preprocessing import StandardScaler
-from sklearn.ensemble import RandomForestRegressor
-from sklearn.metrics import r2_score
+
+
+
 
 drops = ['D0','D1','D2','D3','D4','D5','D6','D7','D8','D2Weeks','DPlanners','DEarly']
 reg_data = reg_data.drop(drops, axis = 1)
@@ -28,7 +29,7 @@ for date in model_date_range:
 		rf = RandomForestRegressor(n_estimators=100, random_state=0, n_jobs = -1, oob_score = True)
 		rf.fit(X_train, y_train)
 		features_results[date][days] = rf.feature_importances_
-#
+#c
 		predicted_train = rf.predict(X_train)
 		predicted_test = rf.predict(X_test)
 		X_test['predicted'] = predicted_test
